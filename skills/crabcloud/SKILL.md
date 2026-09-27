@@ -30,6 +30,7 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 | 撤销某个令牌（高危，先确认） | `crab tokens revoke <id>` |
 | 重新授权 / 调整 scope | `crab login --scopes mail.read`（浏览器确认，你只发起） |
 | 登出并吊销当前令牌 | `crab logout` |
+| 管理登录设备 / 会话、修改密码 | 网页个人中心（crabcloud.cc/account）——CLI 有意不开放 |
 
 拿不准令牌 id 时先 `crab tokens list` 核对；`revoke` 只接受列表里的 id。
 
@@ -37,7 +38,7 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 
 程序化消费时**始终加 `--json`**（`whoami --json` / `tokens list --json`）：
 
-- `whoami --json` → `{ actor, scopes, account: { username, displayName, … }, personalSpace, subscription, credits }`；
+- `whoami --json` → `{ actor, scopes, account: { username, displayName, … }, personalSpace, subscription, credits, apps }`；
 - `tokens list --json` → `[{ id, name, scopes, createdAt, lastUsedAt, expiresAt, revoked }]`：
   后续 `revoke` 用 `id`，向用户转述时用 `name` + `scopes`。
 
@@ -60,3 +61,7 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
   不要怂恿用户一次性给全量 scope。
 - 如实转述能力边界：邮箱 / 云文件 / 协作项目尚未上线，相关请求引导用户关注
   后续版本，不要编造命令或输出。
+- 账号安全操作（修改密码、登录设备/会话的查看与吊销）**有意不开放给 agent
+  通道**：改密对令牌持有者是账号接管面，会话属于"人的浏览器会话"。用户让
+  agent 做这些时，如实说明并引导到网页个人中心（crabcloud.cc/account）操作，
+  不要猜命令、也不要试图直接调 API。
