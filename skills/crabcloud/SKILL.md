@@ -1,6 +1,6 @@
 ---
 name: crabcloud
-description: Manage the user's Crab Cloud personal cloud account and agent tokens through the `crab` CLI — check identity/subscription/credits, list and revoke authorized agent tokens, and re-authorize with specific scopes. Use this skill whenever the user asks about their Crab Cloud account ("我的账号信息", "who am I on crabcloud"), wants to see or clean up authorized agents/tokens ("看看我授权了哪些 agent", "revoke that old token", "撤销那个旧令牌"), or asks how to connect their coding agent to Crab Cloud — even if they never say "crab" or "Crab Cloud" explicitly. Mail, files and projects capabilities ship with their own skills (crabcloud-mail etc.) in later phases.
+description: Manage the user's Crab Cloud personal cloud account and agent tokens through the `crab` CLI — check identity/subscription/credits, list and revoke authorized agent tokens, and re-authorize with specific scopes. Use this skill whenever the user asks about their Crab Cloud account ("我的账号信息", "who am I on crabcloud"), wants to see or clean up authorized agents/tokens ("看看我授权了哪些 agent", "revoke that old token", "撤销那个旧令牌"), or asks how to connect their coding agent to Crab Cloud — even if they never say "crab" or "Crab Cloud" explicitly. Email lives in the crabcloud-mail skill (crab mail …); files and projects ship in later phases.
 ---
 
 # Crab Cloud（平台 / 账号域）
@@ -8,8 +8,8 @@ description: Manage the user's Crab Cloud personal cloud account and agent token
 Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，邮箱 / 云文件 / 协作项目
 是独立应用。`crab` CLI 是 Agent 的稳定接口：凭证在用户本机
 （`~/.config/crabcloud/credentials.json`，0600），服务端只存令牌哈希、全程审计。
-本 skill 目前覆盖**平台与账号域**；邮箱（`crabcloud-mail`）、云文件、协作项目
-能力随各阶段上线——用户问到这些时如实说明尚未开放，**不要猜命令**。
+本 skill 覆盖**平台与账号域**；邮箱已上线，见 `crabcloud-mail` skill（`crab mail …`）；
+云文件、协作项目仍随后续阶段提供——用户问到这些时如实说明尚未开放，**不要猜命令**。
 
 ## 第一步：确认 CLI 可用
 
@@ -59,8 +59,8 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
   执行 `crab tokens revoke`；撤销立即生效，不可恢复（重新授权即可再建）。
 - **scope 最小化**：建议按需授权（只读场景 `crab login --scopes account.read`），
   不要怂恿用户一次性给全量 scope。
-- 如实转述能力边界：邮箱 / 云文件 / 协作项目尚未上线，相关请求引导用户关注
-  后续版本，不要编造命令或输出。
+- 如实转述能力边界：云文件 / 协作项目尚未上线，相关请求引导用户关注
+  后续版本，不要编造命令或输出；邮箱请求转交 `crabcloud-mail` skill。
 - 账号安全操作（修改密码、登录设备/会话的查看与吊销）**有意不开放给 agent
   通道**：改密对令牌持有者是账号接管面，会话属于"人的浏览器会话"。用户让
   agent 做这些时，如实说明并引导到网页个人中心（crabcloud.cc/account）操作，
