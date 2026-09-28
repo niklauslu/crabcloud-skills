@@ -28,6 +28,7 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 | 读某封邮件 | `crab mail read <id>`（自动置已读；正文 + 操作记录） |
 | 找邮件 | `crab mail search <关键词>`（主题/发件人/收件人/正文，不含废纸篓） |
 | 发邮件 | `crab mail send --to a@x.cc --subject "..." --body "..."`（长正文用 `--body-file`） |
+| 发邮件带附件 | `crab mail send … --attach <云盘id\|文件名>[,…]`（引用云盘已有对象，不复制，≤10 个；先 `crab storage ls` 核对对象，文件名需精确唯一命中） |
 | 按名字/备注发邮件 | `--to`/`--cc` 可直接写联系人名（不含 `@`）：CLI 查联系人簿解析成地址，唯一命中即用；多候选会报错列出，改用完整地址重试。也可先 `crab contacts list <名字>`（`crabcloud` skill）查地址再发 |
 | 回信（带线程锚点） | 先 `crab mail read <id>` 取 Message-ID，再 `crab mail send --to … --in-reply-to <message-id> …` |
 | 整理邮箱 | `crab mail archive <id>` / `crab mail trash <id>` / `crab mail delete <id>` |
@@ -48,7 +49,8 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 
 - `mail list --json` → `{ items: [...], nextCursor }`，条目含
   `id/folder/fromAddr/to/subject/snippet/isUnread/hasAttachments/createdAt`；
-- `mail read --json` → 完整正文 + `actors`（谁读过/谁代发，审计源）；
+- `mail read --json` → 完整正文 + `attachments`（id/filename/mimeType/sizeBytes）
+  + `actors`（谁读过/谁代发，审计源）；
 - `mail send --json` → `{ message, chargedCredits, failedExternal }`。
 
 ## 纪律
@@ -60,4 +62,8 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
   `mail trash`（可找回，废纸篓 30 天后自动清除）。
 - 草稿流程：先 `mail list --folder drafts` 查看草稿；本阶段 CLI 不直接改草稿，
   确认发送请把草稿内容转述给用户后用 `mail send` 发出。
-- 附件：本阶段只标记 `hasAttachments`，附件内容尚未开放读取，如实说明。
+- 附件：`mail read` 输出附件清单（id/文件名/类型/体积）；附件内容归云盘管
+  ——下载用 `crab storage download <id>`（见 `crabcloud-storage` skill，跨来
+  源通用），发送引用云盘对象用 `mail send --attach`（对象须未被其他邮件绑
+  定；若报错说明已被引用，改走正文链接）。邮件详情附件显示「已在云盘删除」
+  表示对象已被软删，如实转述。
