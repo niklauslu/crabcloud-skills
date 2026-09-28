@@ -6,15 +6,17 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 # Crab Cloud 邮箱（crab mail）
 
 用户的 Crab Cloud 账号自带平台邮箱 `username@crabcloud.cc`（用户名即地址本地部分）。
-本 skill 覆盖邮箱域的 agent 通道；账号/令牌管理见 `crabcloud` skill，云文件、协作
-项目尚未开放——用户问到时如实说明，**不要猜命令**。
+本 skill 覆盖邮箱域的 agent 通道；账号/令牌管理见 `crabcloud` skill。云盘见
+`crabcloud-storage` skill（`crab storage …`），协作尚未上线——用户问到时如实说明，
+**不要猜命令**。
 
 ## 第一步：确认可用
 
 - `crab --version` 确认已安装；未登录（退出码 3）引导用户 `crab login`。
 - 邮箱动作需要对应 scope：读 `mail.read`、搜索 `mail.search`、发信 `mail.send`、
   删除 `mail.delete`。退出码 4 = scope 不足：如实转述缺哪个，引导用户
-  `crab login --scopes mail.read,...` 按需最小化重新授权（你只发起，不代批）。
+  `crab login --scopes mail`（组名 = 四项整组）或单列所需 scope 按需最小化
+  重新授权（你只发起，不代批）。
 
 ## 意图 → 命令映射
 
@@ -26,6 +28,7 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 | 读某封邮件 | `crab mail read <id>`（自动置已读；正文 + 操作记录） |
 | 找邮件 | `crab mail search <关键词>`（主题/发件人/收件人/正文，不含废纸篓） |
 | 发邮件 | `crab mail send --to a@x.cc --subject "..." --body "..."`（长正文用 `--body-file`） |
+| 回信（带线程锚点） | 先 `crab mail read <id>` 取 Message-ID，再 `crab mail send --to … --in-reply-to <message-id> …` |
 | 整理邮箱 | `crab mail archive <id>` / `crab mail trash <id>` / `crab mail delete <id>` |
 
 拿不准邮件 id 时先 `crab mail list` / `crab mail search` 核对再操作。
