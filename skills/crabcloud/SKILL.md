@@ -1,6 +1,6 @@
 ---
 name: crabcloud
-description: Manage the user's Crab Cloud personal cloud account and agent tokens through the `crab` CLI — check identity/subscription/credits, list and revoke authorized agent tokens, and re-authorize with specific scopes or scope groups. Use this skill whenever the user asks about their Crab Cloud account ("我的账号信息", "who am I on crabcloud"), wants to see or clean up authorized agents/tokens ("看看我授权了哪些 agent", "revoke that old token", "撤销那个旧令牌"), or asks how to connect their coding agent to Crab Cloud — even if they never say "crab" or "Crab Cloud" explicitly. Email lives in the crabcloud-mail skill (crab mail …) and the Drive in crabcloud-storage (crab storage …); collab and contacts ship in later phases.
+description: Manage the user's Crab Cloud personal cloud account and agent tokens through the `crab` CLI — check identity/subscription/credits, list and revoke authorized agent tokens, and re-authorize with specific scopes or scope groups. Use this skill whenever the user asks about their Crab Cloud account ("我的账号信息", "who am I on crabcloud"), wants to see or clean up authorized agents/tokens ("看看我授权了哪些 agent", "revoke that old token", "撤销那个旧令牌"), manages their contacts ("我的联系人", "把 zhangsan 加到联系人", "我的邀请码"), or asks how to connect their coding agent to Crab Cloud — even if they never say "crab" or "Crab Cloud" explicitly. Contacts are managed with `crab contacts …` in this skill; email lives in the crabcloud-mail skill (crab mail …) and the Drive in crabcloud-storage (crab storage …); collab ships in a later phase.
 ---
 
 # Crab Cloud（平台 / 账号域）
@@ -8,9 +8,10 @@ description: Manage the user's Crab Cloud personal cloud account and agent token
 Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，邮箱 / 云盘 / 协作 /
 联系人是独立应用。`crab` CLI 是 Agent 的稳定接口：凭证在用户本机
 （`~/.config/crabcloud/credentials.json`，0600），服务端只存令牌哈希、全程审计。
-本 skill 覆盖**平台与账号域**；邮箱见 `crabcloud-mail` skill（`crab mail …`），
-云盘见 `crabcloud-storage` skill（`crab storage …`）；协作、联系人随后续阶段
-提供——用户问到这些时如实说明，**不要猜命令**。
+本 skill 覆盖**平台、账号域与联系人**（`crab contacts …`）；邮箱见
+`crabcloud-mail` skill（`crab mail …`），
+云盘见 `crabcloud-storage` skill（`crab storage …`）；协作随后续阶段
+提供——用户问到时如实说明，**不要猜命令**。
 
 ## 第一步：确认 CLI 可用
 
@@ -33,6 +34,9 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 | 撤销某个令牌（高危，先确认） | `crab tokens revoke <id>` |
 | 重新授权 / 调整 scope | `crab login --scopes mail`（组名整组授权；也可单 scope 如 `mail.read`。浏览器确认，你只发起） |
 | 登出并吊销当前令牌 | `crab logout` |
+| 联系人：列出 / 搜索 | `crab contacts list [query]`（`--offset`/`--limit` 分页，输出含「共 N 条」） |
+| 联系人：添加 / 删除 | `crab contacts add <address> [--name 名] [--note 备注]` / `crab contacts rm <id|address>` |
+| 我的邀请码、邀请链接与受邀名单 | `crab contacts invite [--reset]` / `crab contacts invitees` |
 | 管理登录设备 / 会话、修改密码 | 网页个人中心（crabcloud.cc/account）——CLI 有意不开放 |
 
 拿不准令牌 id 时先 `crab tokens list` 核对；`revoke` 只接受列表里的 id。
@@ -64,8 +68,10 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
   不要怂恿用户一次性给全量 scope。`--scopes` 支持组名（`mail` = 读写搜删四项
   整组）与单个 scope 混用；组目录见 `crab help`，可用组：account / mail /
   storage（云盘，含素材与附件）/ collab / contacts。
-- 如实转述能力边界：协作、联系人尚未上线——相关请求如实说明，引导用户
-  用网页（crabcloud.cc），不要编造命令或输出；邮箱请求转交 `crabcloud-mail`
+- 如实转述能力边界：协作尚未上线——相关请求如实说明，引导用户
+  用网页（crabcloud.cc），不要编造命令或输出；联系人已上线，用 `crab contacts`
+  （list / add / rm / invite / invitees；scope contacts.read/write，程序消费加
+  `--json`）处理；邮箱请求转交 `crabcloud-mail`
   skill，云盘请求转交 `crabcloud-storage` skill。
 - 账号安全操作（修改密码、登录设备/会话的查看与吊销）**有意不开放给 agent
   通道**：改密对令牌持有者是账号接管面，会话属于"人的浏览器会话"。用户让
