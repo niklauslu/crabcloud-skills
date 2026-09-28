@@ -28,6 +28,7 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 | 读某封邮件 | `crab mail read <id>`（自动置已读；正文 + 操作记录） |
 | 找邮件 | `crab mail search <关键词>`（主题/发件人/收件人/正文，不含废纸篓） |
 | 发邮件 | `crab mail send --to a@x.cc --subject "..." --body "..."`（长正文用 `--body-file`） |
+| 按名字/备注发邮件 | `--to`/`--cc` 可直接写联系人名（不含 `@`）：CLI 查联系人簿解析成地址，唯一命中即用；多候选会报错列出，改用完整地址重试。也可先 `crab contacts list <名字>`（`crabcloud` skill）查地址再发 |
 | 回信（带线程锚点） | 先 `crab mail read <id>` 取 Message-ID，再 `crab mail send --to … --in-reply-to <message-id> …` |
 | 整理邮箱 | `crab mail archive <id>` / `crab mail trash <id>` / `crab mail delete <id>` |
 
@@ -53,7 +54,8 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 ## 纪律
 
 - **发邮件是外发动作**：发送前向用户复述收件人、主题与计费口径，确认后再执行；
-  不确定收件人身份时先搜索历史邮件核对，不要猜测地址。
+  不确定收件人身份时优先查联系人簿（`crab contacts list <名字>`，见 `crabcloud`
+  skill），其次搜索历史邮件核对，不要猜测地址。
 - **`mail delete` 是彻底删除**，不可恢复；用户没明说「彻底删除」时用
   `mail trash`（可找回，废纸篓 30 天后自动清除）。
 - 草稿流程：先 `mail list --folder drafts` 查看草稿；本阶段 CLI 不直接改草稿，
