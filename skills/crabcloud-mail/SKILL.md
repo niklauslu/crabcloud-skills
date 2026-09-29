@@ -12,7 +12,12 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 
 ## 第一步：确认可用
 
-- `crab --version` 确认已安装；未登录（退出码 3）引导用户 `crab login`。
+- 运行 `crab --version` 确认已安装。命令不存在时让用户运行
+  `npx @crabcloud/cli init`（登录 + 安装本 skill 一步完成）；已装过但命令缺失
+  时运行 `npx @crabcloud/cli@latest init` 升级。
+- CLI 基于 npx 分发，**本机没有 `crab` 命令时，下文所有 `crab <命令>` 都可以
+  `npx @crabcloud/cli <命令>` 等价执行**（例如 `npx @crabcloud/cli mail list`）。
+- 未登录（退出码 3）引导用户 `crab login`。
 - 邮箱动作需要对应 scope：读 `mail.read`、搜索 `mail.search`、发信 `mail.send`、
   删除 `mail.delete`。退出码 4 = scope 不足：如实转述缺哪个，引导用户
   `crab login --scopes mail`（组名 = 四项整组）或单列所需 scope 按需最小化
