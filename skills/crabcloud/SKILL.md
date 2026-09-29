@@ -30,6 +30,9 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 |---|---|
 | 看账号身份 / 订阅 / 积分 | `crab whoami` |
 | 程序化读取身份 | `crab whoami --json` |
+| 积分余额（月送/充值/合计） | `crab credits`（需 `credits.read`，脚本消费加 `--json`） |
+| 积分流水（花了多少、花在哪） | `crab credits history [--limit N] [--offset N]`（变动 ±：消耗为负；`--json` 含 total） |
+| 查动作计价（如发一封外域邮件扣多少） | `crab credits pricing`（公开端点，无需登录） |
 | 列出已授权的 Agent 令牌 | `crab tokens list`（脚本消费加 `--json`） |
 | 撤销某个令牌（高危，先确认） | `crab tokens revoke <id>` |
 | 重新授权 / 调整 scope | `crab login --scopes mail`（组名整组授权；也可单 scope 如 `mail.read`。浏览器确认，你只发起） |
@@ -39,6 +42,10 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 | 我的邀请码、邀请链接与受邀名单 | `crab contacts invite [--reset]` / `crab contacts invitees` |
 | 管理登录设备 / 会话、修改密码 | 网页个人中心（crabcloud.cc/account）——CLI 有意不开放 |
 
+积分命令需 `credits.read` scope（`account` 组含它）：退出码 4 报缺该 scope 时，
+引导 `crab login --scopes account` 重新授权。积分额度一律以**积分数**表述
+（100 积分 = $1.00，仅价格类口径用美元）；充值/下单是 Web 会话能力，CLI/Agent
+令牌不动账——用户要充值时引导网页账单页（crabcloud.cc/account/billing）。
 拿不准令牌 id 时先 `crab tokens list` 核对；`revoke` 只接受列表里的 id。
 
 ## 机器可读输出
