@@ -15,9 +15,10 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 
 ## 第一步：确认 CLI 可用
 
-- 运行 `crab --version` 确认已安装。命令不存在时让用户运行
-  `npx @crabcloud/cli init`（登录 + 安装本 skill 一步完成）；已装过但命令缺失
-  时运行 `npx @crabcloud/cli@latest init` 升级。
+- 运行 `crab --version` 确认已安装。注意 `crab init` 只做登录 + 安装 skill，
+  **不含命令本体**——本机没有 `crab` 命令时让用户 `npm i -g @crabcloud/cli@latest`
+  安装（已装旧版同款命令升级）；不想装全局则整段跳过，下文所有 `crab <命令>`
+  直接 `npx @crabcloud/cli <命令>` 等价执行（init 同样可 `npx @crabcloud/cli init`）。
 - `crab whoami` 报「未登录」或退出码 3 → 引导用户 `crab login`。登录走浏览器
   设备授权——授权页摆出全目录供用户勾选，**实际授予集由人定**，可能多于或少于
   `--scopes` 请求——**你只发起，不代批**；登录后先 `crab whoami` 核对实际

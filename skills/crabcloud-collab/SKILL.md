@@ -13,9 +13,10 @@ skill 覆盖协作域的 agent 通道；账号/令牌管理见 `crabcloud` skill
 
 ## 第一步：确认可用
 
-- 运行 `crab --version` 确认已安装。命令不存在时让用户运行
-  `npx @crabcloud/cli init`（登录 + 安装本 skill 一步完成）；已装过但命令缺失
-  时运行 `npx @crabcloud/cli@latest init` 升级。
+- 运行 `crab --version` 确认已安装。注意 `crab init` 只做登录 + 安装 skill，
+  **不含命令本体**——本机没有 `crab` 命令时让用户 `npm i -g @crabcloud/cli@latest`
+  安装（已装旧版同款命令升级）；不想装全局则整段跳过，下文所有 `crab <命令>`
+  直接 `npx @crabcloud/cli <命令>` 等价执行（init 同样可 `npx @crabcloud/cli init`）。
 - CLI 基于 npx 分发，**本机没有 `crab` 命令时，下文所有 `crab <命令>` 都可以
   `npx @crabcloud/cli <命令>` 等价执行**（例如 `npx @crabcloud/cli collab tasks`）。
 - 未登录（退出码 3）引导用户 `crab login`。
