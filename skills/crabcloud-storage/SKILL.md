@@ -1,15 +1,18 @@
 ---
 name: crabcloud-storage
-description: Manage the user's Crab Cloud Drive (云盘 — unified storage for drive uploads, media assets and mail attachments on one quota, with end-to-end encryption) through the `crab` CLI — list and filter objects, upload and download files (including decrypting share links), rename, tag, categorize, publish/unpublish public links, create expiring share links with passcodes, manage the locally remembered encryption key, trash/restore/purge, and check the storage quota. Use this skill when the user asks to upload, find, organize, share or clean up files on Crab Cloud ("上传这个文件", "云盘里有什么", "把这个文件公开分享", "看看存储用了多少", "crab storage"), or wants files moved in or out of their drive — even if they never say "crab" or "Crab Cloud" explicitly.
+description: Manage the user's Crab Cloud storage (云盘 — one base file service carrying drive uploads, media assets, mail attachments, collab files and agent files on one quota; vault-grade end-to-end encryption is optional) through the `crab` CLI — list and filter objects, upload and download files (including decrypting share links), rename, tag, categorize, publish/unpublish public links, create expiring share links with passcodes, manage the locally remembered encryption key, trash/restore/purge, and check the storage quota. Use this skill when the user asks to upload, find, organize, share or clean up files on Crab Cloud ("上传这个文件", "云盘里有什么", "把这个文件公开分享", "看看存储用了多少", "crab storage"), or wants files moved in or out of their drive — even if they never say "crab" or "Crab Cloud" explicitly.
 ---
 
 # Crab Cloud 云盘（crab storage）
 
-云盘是用户的统一存储：云盘上传 / 素材库 / 邮件附件三来源共用一本 2 GB 容量账；
-属性优先、位置无关——分类（至多一个）+ 标签（AND 检索）代替文件夹。files 域
-上传默认端到端加密（服务器只有包裹态密钥，明文密钥只在本机）。本 skill 覆盖
-云盘域的 agent 通道；账号/令牌管理见 `crabcloud` skill，邮箱见 `crabcloud-mail`
-skill。
+云盘是用户的统一存储基础服务：云盘上传 / 素材库 / 邮件附件 / 协作文件 /
+Agent 产物五来源共用一本容量账（按档位，Free 1GB / Plus 10GB）；属性优先、
+位置无关——分类（至多一个）+ 标签（AND 检索）代替文件夹。**上传缺省明文**
+（2026-10 基础服务化：其他应用可直接引用）；提供口令时才端到端加密（保险箱
+文件，服务器只有包裹态密钥，明文密钥只在本机）。加密三态以 `wrappedDataKey`
+前缀区分：无前缀 = 明文、`p1.` = 平台加密（如邮件附件，服务端可透明解密）、
+`u1.` = 保险箱（用户持钥）。本 skill 覆盖存储域的 agent 通道；账号/令牌管理见
+`crabcloud` skill，邮箱见 `crabcloud-mail` skill。
 
 ## 第一步：确认可用
 
@@ -24,7 +27,7 @@ skill。
   `storage.write`，移回收站/恢复/彻底删除 `storage.delete`。退出码 4 = scope
   不足：如实转述缺哪个，引导 `crab login --scopes storage`（组名 = 三项整组）
   重新授权（你只发起，不代批）。
-- 退出码 7 = `storage.quotaExceeded`（统一容量账满，2 GB）：告知用户，可建议
+- 退出码 7 = `storage.quotaExceeded`（统一容量账满）：告知用户，可建议
   清理回收站或大文件（`storage quota` 看分项），不要自动重试。
 
 ## 意图 → 命令映射
@@ -32,9 +35,9 @@ skill。
 | 用户意图 | 命令 |
 |---|---|
 | 云盘里有什么 | `crab storage ls`（按时间倒序，默认 30 条；`--limit` / `--offset` 翻页） |
-| 找文件 | `crab storage ls --q 关键字`（文件名匹配；可叠 `--source files\|media\|mail`、`--type doc\|image\|video\|archive\|code`、`--category 分类id\|none`、`--tag a,b`、`--shared`、`--recent`、`--message-id <id>`） |
+| 找文件 | `crab storage ls --q 关键字`（文件名匹配；可叠 `--source files\|media\|mail\|collab\|agent`、`--type doc\|image\|video\|archive\|code`、`--category 分类id\|none`、`--tag a,b`、`--shared`、`--recent`、`--encrypted only\|plain`、`--message-id <id>`；`--encrypted only` = 仅保险箱、`plain` = 排除保险箱） |
 | 看回收站 | `crab storage ls --trash` |
-| 上传文件 | `crab storage upload <路径...>`（多文件串行；直传优先，自动回退中转；默认端到端加密——口令三来源见下节，首次使用自动初始化并打印一次性恢复码） |
+| 上传文件 | `crab storage upload <路径...>`（多文件串行；直传优先，自动回退中转；**缺省明文直传**，其他应用可直接引用；`--passphrase` 或 `CRAB_PASSPHRASE` 提供时端到端加密为保险箱文件——口令三来源见下节，首次使用自动初始化并打印一次性恢复码） |
 | 下载文件 | `crab storage download <id\|文件名\|分享链接> [-o 输出路径] [--passcode 提取码]`（默认按原文件名存当前目录；**凭完整分享链接可免登录下载并本地解密**——`#` 后是密钥片段，这是 agent→agent 的主通道；带提取码的分享加 `--passcode`） |
 | 改名 | `crab storage rename <id\|文件名> <新名称>` |
 | 加/删标签 | `crab storage tag <id\|文件名> --add a,b [--remove c,d]` |
@@ -46,7 +49,8 @@ skill。
 | 可控分享（有效期/提取码/撤销） | `crab storage share <id\|文件名> [--expires 7\|30\|90\|forever] [--passcode 提取码]`（打印完整分享链接；加密对象链接自带 `#` 密钥片段）；列表 `crab storage shares <id\|文件名>`、撤销 `crab storage unshare <shareId>` |
 | 云盘钥匙管理 | `crab storage key`（查状态）/ `--remember`（解锁一次并记住，之后免口令）/ `--forget`（清除）——见下节 |
 | 删除 | `crab storage rm <id\|文件名>`（进回收站，7 天后自动清理）→ `restore` 恢复 / `purge` 彻底删除 |
-| 看水位 | `crab storage quota`（三来源分项 + 回收站占用 + 对象计数） |
+| 看水位 | `crab storage quota`（五来源分项 + 保险箱计数 + 回收站占用 + 对象计数） |
+| 看云盘操作流 | `crab storage activity`（读取/上传/删除/建分享，最近 50 条） |
 
 `<id|文件名>`：文件名全库精确唯一命中时自动解析为 id（回收站内同样可解析，
 restore/purge 直接用文件名即可）；命中多个或查不到时按字面当 id 用——拿不准
@@ -58,16 +62,20 @@ restore/purge 直接用文件名即可）；命中多个或查不到时按字面
 程序化消费**始终加 `--json`**：
 
 - `storage ls --json` → `{ objects: [...], nextOffset, total }`，条目含
-  `id / source / filename / mimeType / sizeBytes / categoryId / tags / isPublic / createdAt`；
-- `storage quota --json` → `{ usedBytes, quotaBytes, bySource: { files, media, mail }, trashBytes, counts }`；
+  `id / source / filename / mimeType / sizeBytes / categoryId / tags / isEncrypted / wrappedDataKey / isPublic / createdAt`
+  （`source` = `files|media|mail|collab|agent`；u1 判定 = `isEncrypted && wrappedDataKey` 以 `u1.` 开头）；
+- `storage quota --json` → `{ usedBytes, quotaBytes, bySource: { files, media, mail, collab, agent }, trashBytes, counts: { all, files, media, mail, collab, agent, shared, vault, trash } }`
+  （素材库条数 = `counts.all - counts.vault`）；
+- `storage activity --json` → 条目含 `action（object.read/object.uploaded/object.deleted/share.created）/ actorType / actorLabel / objectId / objectName / createdAt`；
 - `upload` / `categories` / `tags` / `shares` 的 `--json` 同构（单对象 / 分类数组 /
   标签数组 / 分享数组）。
 
-## 云盘口令与本机钥匙
+## 保险箱口令与本机钥匙
 
-files 域是端到端加密：服务器只有口令包裹态的主密钥，**明文密钥只存在于用户
-本机**——CLI 不可能也不允许向服务器索取。涉及加密对象的命令（upload /
-download / share 加密文件）需要云盘口令，来源优先级：
+保险箱（u1）是端到端加密：服务器只有口令包裹态的主密钥，**明文密钥只存在于
+用户本机**——CLI 不可能也不允许向服务器索取。**只有涉及保险箱文件的命令才
+需要口令**（带口令 upload / download 或 share u1 对象；明文与 p1 平台加密对象
+全程免口令）。口令来源优先级：
 
 1. `--passphrase <口令>`（flag）
 2. 环境变量 `CRAB_PASSPHRASE`（**Agent/脚本推荐**——非交互终端不会弹提问，
@@ -94,6 +102,9 @@ download / share 加密文件）需要云盘口令，来源优先级：
   等待即可；凭链接下载时提取码用 `--passcode` 正确携带。
 - **purge 是彻底删除**，不可恢复；用户没明说「彻底删除」时一律用 `rm`
   （回收站保留 7 天可找回）。
+- **保险箱（u1）不能被其他应用引用**：邮件附件（`mail send --attach`）与协作
+  记录引用都只接受明文 / p1 平台加密对象，u1 对象会被明确拒绝——需要跨应用
+  使用时用分享链接（u1 链接自带密钥片段），或等互转功能；不要尝试绕过。
 - 邮件附件与用户上传同账：水位告急时用 `quota` 分项定位来源再建议清理。
 - 公开直链的呈现方式由服务端策略决定（图片/视频/音频/PDF/纯文本内联，SVG 与
   其他类型强制下载），CLI 侧没有、也不需要有开关。

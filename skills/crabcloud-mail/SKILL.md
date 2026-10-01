@@ -7,8 +7,8 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 
 用户的 Crab Cloud 账号自带平台邮箱 `username@crabcloud.cc`（用户名即地址本地部分）。
 本 skill 覆盖邮箱域的 agent 通道；账号/令牌管理见 `crabcloud` skill。云盘见
-`crabcloud-storage` skill（`crab storage …`），协作尚未上线——用户问到时如实说明，
-**不要猜命令**。
+`crabcloud-storage` skill（`crab storage …`），协作见 `crabcloud-collab` skill
+（`crab collab …`）。
 
 ## 第一步：确认可用
 
@@ -32,6 +32,9 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 | 只看未读 | `crab mail list --unread` |
 | 翻页 | `crab mail list --cursor <nextCursor>`（列表末尾会提示） |
 | 读某封邮件 | `crab mail read <id>`（自动置已读；正文 + 操作记录） |
+| 标回未读 | `crab mail unread <id>` |
+| 看各文件夹总量/未读、本月收发 | `crab mail folders`（判断「有没有新邮件」先看这个，别翻列表） |
+| 看邮箱操作流（谁读过/谁代发） | `crab mail activity`（最近 50 条，审计源） |
 | 找邮件 | `crab mail search <关键词>`（主题/发件人/收件人/正文，不含废纸篓） |
 | 发邮件 | `crab mail send --to a@x.cc --subject "..." --body "..."`（长正文用 `--body-file`） |
 | 发邮件带附件 | `crab mail send … --attach <云盘id\|文件名>[,…]`（引用云盘已有对象，不复制，≤10 个；先 `crab storage ls` 核对对象，文件名需精确唯一命中） |
@@ -44,7 +47,7 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 ## 计费口径（必须如实转述）
 
 - **平台内互发免费**：收件人也是 `@crabcloud.cc` 地址时不消耗积分。
-- **外部出站 2 积分/封**：发送前向用户复述收件人与计费；退出码 7 = 积分不足，
+- **外部出站 0.02 积分/封（$0.02）**：发送前向用户复述收件人与计费；退出码 7 = 积分不足，
   告知用户不要自动重试。
 - 发送结果会报告 `消耗积分` 与失败数；部分失败时失败部分的积分自动退回
   （`发送:partial` 标记）。
@@ -57,7 +60,9 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
   `id/folder/fromAddr/to/subject/snippet/isUnread/hasAttachments/createdAt`；
 - `mail read --json` → 完整正文 + `attachments`（id/filename/mimeType/sizeBytes）
   + `actors`（谁读过/谁代发，审计源）；
-- `mail send --json` → `{ message, chargedCredits, failedExternal }`。
+- `mail send --json` → `{ message, chargedCredits, failedExternal }`；
+- `mail folders --json` → `{ address, folders: [{ folder, total, unread }], month: { received, sent, outbound } }`；
+- `mail activity --json` → 条目含 `action（read/drafted/sent）/ actorType / actorLabel / subject / messageId / createdAt`。
 
 ## 纪律
 
@@ -71,5 +76,6 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 - 附件：`mail read` 输出附件清单（id/文件名/类型/体积）；附件内容归云盘管
   ——下载用 `crab storage download <id>`（见 `crabcloud-storage` skill，跨来
   源通用），发送引用云盘对象用 `mail send --attach`（对象须未被其他邮件绑
-  定；若报错说明已被引用，改走正文链接）。邮件详情附件显示「已在云盘删除」
-  表示对象已被软删，如实转述。
+  定；若报错说明已被引用，改走正文链接）。**附件只接受明文 / 平台加密(p1)
+  对象，保险箱(u1) 文件不能作附件**——CLI 会明确拒绝，需要分享时改走正文
+  链接。邮件详情附件显示「已在云盘删除」表示对象已被软删，如实转述。
