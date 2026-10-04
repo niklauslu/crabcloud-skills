@@ -1,6 +1,6 @@
 ---
 name: crabcloud-shop
-description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, check orders or products, manage store members/roles ("我的店铺", "开店", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
+description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
 ---
 
 # Crab Cloud 商店（crab shop）
@@ -33,11 +33,32 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 看分类（多级树） | `crab shop categories --store <slug>`（缩进树 + 商品数 + id） |
 | 加分类 / 加子分类 | `crab shop category add <名称> [--parent <id或名称>] --store <slug>`（新建落同级末尾） |
 | 分类改名 / 排序 / 删除 | `crab shop category rename <id或名称> <新名称>` · `crab shop category move <id或名称> <up\|down>`（同级换位，边界不动）· `crab shop category delete <id或名称>`（有子级拒绝；叶子删除后商品迁入「未分类」） |
-| 看规格库模板 | `crab shop specs --store <slug>`（名称/选项值/引用商品数） |
-| 建 / 改规格模板 | `crab shop spec add <名称> --values <值1,值2,…>` · `crab shop spec update <id或名称> [--name <新名>] [--values <a,b,c>]` |
-| 删规格模板 | `crab shop spec delete <id或名称>`（引用 = 快照拷贝：已建商品不受影响） |
+| 看商品列表 | `crab shop products [--status draft\|active\|archived] [--category <id或名称>] [--q 文本] [--limit N --offset N]`（多规格行库存 = 变体合计） |
+| 看商品详情 | `crab shop product <id\|SKU码>`（先 id 直查、404 再按店内码反查；含规格组合与两层库存） |
+| 新建商品 | `crab shop product create --kind physical\|digital --name 名称 --variant-mode single\|multi [--spec-axis "颜色=红,蓝"]… --price-cents 1990 [--status draft\|active]`（类型与规格模式创建即锁定；多规格可先只建轴，组合价后续 spec 配置） |
+| 改商品资料 / 上下架 | `crab shop product update <id\|SKU码> [--name … --price-cents N --category <id\|名称\|none> --status active …]`（类型与规格模式不可变；clear 撤销划线价/限购） |
+| 配多规格组合价 / 启停组合 | `crab shop product spec <id> --set "红,M=1990,2500,on" …`（值按轴顺序；未提及组合保持原值；不改库存） |
+| 下架归档商品 | `crab shop product archive <id\|SKU码>`（软删；恢复 = product update --status draft） |
+| 入库 / 出库 / 盘点 | `crab shop stock in\|out\|set <id\|SKU码> --amount N [--variant "红/M"] --note "说明"`（实物动仓库账；数字限量同命令走上架账；set 或未给 --reason 必带 --note） |
+| 设销售库存（上架额度） | `crab shop listed <id\|SKU码> --stock N [--variant …]`（仅实物；0 ≤ N ≤ 实际库存，不够先入库） |
+| 看出入库台账 | `crab shop movements [--product <id\|SKU码>] [--limit N --offset N]`（新→旧；发货/退款自动落账也在内） |
 
-分类/模板的 `<id或名称>` 参数：id 优先，名称须唯一（重名会提示改用 id）。
+商品引用统一 `<id|SKU码>`：id 优先，SKU 码店内反查（组合码优先于商品级码）。
+
+## 商品与库存纪律（服务端 fail-closed，客户端前置校验）
+
+- **金额一律整数分**：所有 `--*-cents` 传整数分（1990 = $19.90），禁止元/浮点；
+  API 返回 `*_cents`，展示 ÷100 加货币符号。
+- **类型与规格模式创建即锁**：physical/digital 与 single/multi 不可改——库存
+  挂账层级不同；单规格商品本身即唯一 SKU，多规格的码在每个组合上。
+- **规格轴数量首次保存即锁**（轴不能增删）；规格名与选项值可调，但被出入库
+  台账引用的组合删不掉（`--set "…,off"` 关闭在售代替）。
+- **两层库存**（实物）：`stock` 动的是仓库账（实际库存）；`listed` 设的是
+  上架额度（可售），0 ≤ N ≤ 实际库存，不够先 `stock in` 入库再上调。
+- **动账留痕**：`--reason purchase` 仅入库有效；set 盘点或未注明原因（落
+  manual）必须带 `--note`；退货入库与发货出库由售后/发货端点自动落账，
+  不要手工登记。
+- 多规格商品动账/设额度必须 `--variant`（组合码 / 变体 id / "值1/值2"）。
 
 ## 权限项（member edit --perms 可用值）
 
@@ -45,8 +66,8 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 `customers`（客户与归属）· `marketing`（营销）· `finance`（账单与争议）·
 `team`（团队管理）· `settings`（店铺设置）
 
-分类与规格库的写操作（add/rename/move/delete）需要 `products` 权限；列表
-只需成员身份。
+商品/库存命令的写操作（create/update/spec/archive/stock/listed）需要
+`products` 权限；列表、详情与台账只需成员身份。
 
 业务身份（--biz）：`sales` / `support`，逗号分隔可多选——决定客户归属与业绩
 归因资格，与权限正交。
@@ -55,5 +76,4 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 
 - 店主不可改权限（由店铺归属决定）；改成员权限前先 `shop members` 确认目标。
 - `shop invite --reset` 会使旧链接立即作废——先和用户确认再重置。
-- 金额一律整数分（API 返回 `*_cents`，展示 ÷100 加货币符号）。
-- 订单/商品/库存等经营命令按批次扩充；本 skill 随 CLI 更新同步维护。
+- 订单/发货/售后命令按批次扩充；本 skill 随 CLI 更新同步维护。
