@@ -1,6 +1,6 @@
 ---
 name: crabcloud
-description: Manage the user's Crab Cloud personal cloud account and agent tokens through the `crab` CLI — check identity/subscription/credits, list and revoke authorized agent tokens, and re-authorize with specific scopes or scope groups. Use this skill whenever the user asks about their Crab Cloud account ("我的账号信息", "who am I on crabcloud"), wants to see or clean up authorized agents/tokens ("看看我授权了哪些 agent", "revoke that old token", "撤销那个旧令牌"), manages their contacts ("我的联系人", "把 zhangsan 加到联系人", "我的邀请码"), or asks how to connect their coding agent to Crab Cloud — even if they never say "crab" or "Crab Cloud" explicitly. Contacts are managed with `crab contacts …` in this skill; email lives in the crabcloud-mail skill (crab mail …), the Drive in crabcloud-storage (crab storage …), and collab in crabcloud-collab (crab collab …).
+description: Manage the user's Crab Cloud personal cloud account and agent tokens through the `crab` CLI — check identity/subscription/credits, list and revoke authorized agent tokens, and re-authorize with specific scopes or scope groups. Use this skill whenever the user asks about their Crab Cloud account ("我的账号信息", "who am I on crabcloud"), wants to see or clean up authorized agents/tokens ("看看我授权了哪些 agent", "revoke that old token", "撤销那个旧令牌"), manages their contacts ("我的联系人", "把 zhangsan 加到联系人", "我的邀请码"), their shipping address book ("我的收货地址", "加一个地址", "换个默认地址"), their favorites ("我的收藏", "收藏了这个商品"), or asks how to connect their coding agent to Crab Cloud — even if they never say "crab" or "Crab Cloud" explicitly. Contacts / addresses / favorites are managed with `crab contacts …` / `crab addresses …` / `crab favorites …` in this skill; email lives in the crabcloud-mail skill (crab mail …), the Drive in crabcloud-storage (crab storage …), and collab in crabcloud-collab (crab collab …).
 ---
 
 # Crab Cloud（平台 / 账号域）
@@ -8,7 +8,8 @@ description: Manage the user's Crab Cloud personal cloud account and agent token
 Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，邮箱 / 云盘 / 协作 /
 联系人是独立应用。`crab` CLI 是 Agent 的稳定接口：凭证在用户本机
 （`~/.config/crabcloud/credentials.json`，0600），服务端只存令牌哈希、全程审计。
-本 skill 覆盖**平台、账号域与联系人**（`crab contacts …`）；邮箱见
+本 skill 覆盖**平台、账号域与个人资产**（联系人 `crab contacts …`、收货地址簿
+`crab addresses …`、收藏 `crab favorites …`）；邮箱见
 `crabcloud-mail` skill（`crab mail …`），
 云盘见 `crabcloud-storage` skill（`crab storage …`）；协作见
 `crabcloud-collab` skill（`crab collab …`）。
@@ -41,6 +42,11 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 | 联系人：列出 / 搜索 | `crab contacts list [query]`（`--offset`/`--limit` 分页，输出含「共 N 条」） |
 | 联系人：添加 / 删除 | `crab contacts add <address> [--name 名] [--note 备注]` / `crab contacts rm <id|address>` |
 | 我的邀请码、邀请链接与受邀名单 | `crab contacts invite [--reset]` / `crab contacts invitees` |
+| 收货地址：查看 | `crab addresses list`（默认地址在前；上限 20 条） |
+| 收货地址：新增 / 更新 | `crab addresses add --name 收件人 --phone 电话 --detail 详址 [--region 省/市/区] [--default]` / `crab addresses update <id\|名称> [--name] [--phone] [--region] [--detail] [--default\|--no-default]` |
+| 收货地址：换默认 / 删除 | `crab addresses set-default <id\|名称>` / `crab addresses rm <id\|名称>` |
+| 收藏：查看 / 添加 | `crab favorites list` / `crab favorites add <refId> [--meta productName=名称,storeId=店铺id]`（幂等，v1 仅 shop.product） |
+| 收藏：查单条 / 取消 | `crab favorites check <refId>` / `crab favorites rm <refId>`（取消幂等） |
 | 管理登录设备 / 会话、修改密码 | 网页个人中心（crabcloud.cc/account）——CLI 有意不开放 |
 
 积分命令需 `credits.read` scope（`account` 组含它）：退出码 4 报缺该 scope 时，
@@ -75,11 +81,16 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 - **scope 最小化**：建议按需授权（只读场景 `crab login --scopes account.read`），
   不要怂恿用户一次性给全量 scope。`--scopes` 支持组名（`mail` = 读写搜删四项
   整组）与单个 scope 混用；组目录见 `crab help`，可用组：account / mail /
-  storage（云盘，含素材与附件）/ collab / contacts。
+  storage（云盘，含素材与附件）/ collab / contacts / addresses / favorites。
 - 如实转述能力边界，不要编造命令或输出：联系人用 `crab contacts`
   （list / add / rm / invite / invitees；scope contacts.read/write，程序消费加
-  `--json`）处理；邮箱请求转交 `crabcloud-mail` skill，云盘请求转交
-  `crabcloud-storage` skill，协作请求转交 `crabcloud-collab` skill
+  `--json`）处理；收货地址用 `crab addresses`
+  （list / add / update / set-default / rm；scope addresses.read/write）——地址簿
+  是通用收货方案，shop 结账用的是下单时的地址快照，改地址簿不影响已下单订单；
+  收藏用 `crab favorites`（list / add / check / rm；scope favorites.read/write），
+  kind 点分式「模块.资源」、v1 仅 shop.product（refId = 商品 id），删除/失效判定
+  由商城侧端点给实时状态，CLI 不猜。邮箱请求转交 `crabcloud-mail` skill，云盘
+  请求转交 `crabcloud-storage` skill，协作请求转交 `crabcloud-collab` skill
   （`crab collab …`，已上线）。
 - 账号安全操作（修改密码、登录设备/会话的查看与吊销）**有意不开放给 agent
   通道**：改密对令牌持有者是账号接管面，会话属于"人的浏览器会话"。用户让
