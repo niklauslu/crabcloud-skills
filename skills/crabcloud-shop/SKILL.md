@@ -1,6 +1,6 @@
 ---
 name: crabcloud-shop
-description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, coupons, announcements and campaigns, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "公告", "活动", "会员等级", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
+description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, coupons, announcements and campaigns, storefront homepage decoration blocks, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "公告", "活动", "首页装修", "装修", "会员等级", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
 ---
 
 # Crab Cloud 商店（crab shop）
@@ -55,6 +55,10 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 看活动 | `crab shop campaigns --store <slug>`（标题/时间窗/四态/关联项；进行中的轮播在店面首页） |
 | 发活动（带关联项） | `crab shop campaign add <标题> [--subtitle … --description …] --link "看直播\|https://…" --coupon <券id> --products <商品id,id> --store <slug>`（关联项可重复，顺序即活动页展示顺序） |
 | 改 / 删活动 | `crab shop campaign edit <id\|前缀> [--title … --enabled on\|off --sort N]`（关联项 flags 任一给出 = 整单替换全部，`--items-clear` 清空，不给则不动）· `crab shop campaign rm <id\|前缀>` |
+| 看首页装修块 | `crab shop decor --store <slug>`（按页面顺序：类型/标题/摘要/启停/id；买家端发现页照此渲染，未装修 = 平台默认页） |
+| 加装修块 | `crab shop decor add <banner\|products\|categories\|coupons\|campaigns\|richtext\|links> … --store <slug>`——banner `--slide "图片id\|标题\|副标题\|跳转"` 可重复(1..5)；products `--products <id,id> --style grid\|scroll`；categories `--categories <id,id>`；coupons `--coupons <id,id>`；campaigns `--campaigns <id,id>`；richtext `--text "正文" [--image 图片id]`；links `--link-item "标题\|跳转"` 可重复(1..8)。跳转目标统一 `none\|product:<id>\|category:<id>\|campaign:<id>\|url:<https://…>`；引用须本店存在（bad_blocks） |
+| 改装修块 | `crab shop decor edit <id\|前缀> [--title … --slide … --products … --text … --image none --height lg --style scroll --enabled on\|off …]`（读改写只改显式字段；列表字段给了 = 整体替换；类型不可改，改类型 = 删了重建） |
+| 装修块启停 / 排序 / 删除 | `crab shop decor on\|off <id\|前缀>`（停用即刻从买家端隐藏）· `crab shop decor move <id\|前缀> <up\|down>`（页面顺序）· `crab shop decor rm <id\|前缀>` |
 | 改 / 删会员等级 | `crab shop tier edit <id\|名称> [--name 新名称 --threshold-cents 分 --benefits 文本 --enabled on\|off]`（只改显式给出的字段）· `crab shop tier delete <id\|名称>` |
 
 商品引用统一 `<id|SKU码>`：id 优先，SKU 码店内反查（组合码优先于商品级码）。
@@ -82,9 +86,12 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 
 商品/库存命令的写操作（create/update/spec/archive/stock/listed）需要
 `products` 权限；优惠券写操作（coupon create/grant/on/off、coupon code
-add/on/off/rm）与公告/活动写操作（announcement/campaign 的 add/edit/rm）需要
-`marketing` 权限、会员等级写操作（tier add/edit/delete）需要 `customers`
-权限；列表、详情与台账只需成员身份。公告/活动的时间窗可空 = 长期/不限。
+add/on/off/rm）、公告/活动写操作（announcement/campaign 的 add/edit/rm）与
+首页装修写操作（decor add/edit/on/off/move/rm）需要 `marketing` 权限、会员
+等级写操作（tier add/edit/delete）需要 `customers` 权限；列表、详情与台账
+只需成员身份。公告/活动的时间窗可空 = 长期/不限；装修块无时间窗，enabled
+即上下架；装修块引用的图片/商品/分类/券/活动必须本店存在（跨店引用报
+bad_blocks）。
 
 业务身份（--biz）：`sales` / `support`，逗号分隔可多选——决定客户归属与业绩
 归因资格，与权限正交。
