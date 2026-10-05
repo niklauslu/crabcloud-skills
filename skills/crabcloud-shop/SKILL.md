@@ -1,6 +1,6 @@
 ---
 name: crabcloud-shop
-description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, coupons, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "会员等级", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
+description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, coupons, announcements and campaigns, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "公告", "活动", "会员等级", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
 ---
 
 # Crab Cloud 商店（crab shop）
@@ -43,13 +43,18 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 设销售库存（上架额度） | `crab shop listed <id\|SKU码> --stock N [--variant …]`（仅实物；0 ≤ N ≤ 实际库存，不够先入库） |
 | 看出入库台账 | `crab shop movements [--product <id\|SKU码>] [--limit N --offset N]`（新→旧；发货/退款自动落账也在内） |
 | 看优惠券 | `crab shop coupons [--status active\|disabled] --store <slug>`（发放/核销 + 码数；券无主码） |
-| 新建优惠券 | `crab shop coupon create --kind amount_off\|percent_off --name 名称 [--amount-cents N \| --percent N] [--min-spend-cents N] [--max-uses N] [--per-user N] [--auto-trigger register\|order_paid] --store <slug>`（所有券先领取/兑换再使用；--auto-trigger = 新用户自动发 / 该店订单支付后自动发） |
+| 新建优惠券 | `crab shop coupon create --kind amount_off\|percent_off --name 名称 [--amount-cents N \| --percent N] [--min-spend-cents N] [--max-uses N] [--per-user N] [--valid-days N] [--expires YYYY-MM-DD] [--auto-trigger register\|order_paid] --store <slug>`（所有券先领取/兑换再使用；--valid-days = 领取后 N 天有效、--expires = 可领取截止，可并存；--auto-trigger = 新用户自动发 / 该店订单支付后自动发） |
 | 给兑换码 / 看兑换码 | `crab shop coupon code add <id> [--count N] [--code 码] [--max-uses N] [--note 渠道]`（批量 ≤100 或单个自定义码，每码独立限次）· `crab shop coupon codes <id>` |
 | 定向发券 | `crab shop coupon grant <id> --emails "a@x.com,b@x.com" [--notify] --store <slug>`（逐邮箱造专属券码进对方卡包；--notify 发通知邮件） |
 | 看领取记录 / 启停 | `crab shop coupon claims <id> [--status unused\|used]` · `crab shop coupon on\|off <id>` |
 | 删 / 启停兑换码 | `crab shop coupon code rm <码>`（已使用的码只能停用不能删）· `crab shop coupon code on\|off <码>` |
 | 看会员等级 | `crab shop tiers --store <slug>`（按累计实付门槛升序；每店上限 10 级） |
 | 加会员等级 | `crab shop tier add <名称> --threshold-cents 10000 [--benefits "权益说明"] [--enabled off] --store <slug>`（默认启用；名称店内唯一；门槛整数分 10000 = $100.00） |
+| 发店铺公告 | `crab shop announcement add <内容> [--link <URL>] [--start 2026-10-08T10:00 --end 2026-10-09] [--sort N] --store <slug>`（多条按排序轮播在店面首页；时间窗可空 = 长期） |
+| 改 / 删公告 | `crab shop announcement edit <id\|前缀> [--content … --link URL\|none --start …\|none --enabled on\|off]`（只改显式字段，none 清除）· `crab shop announcement rm <id\|前缀>` |
+| 看活动 | `crab shop campaigns --store <slug>`（标题/时间窗/四态/关联项；进行中的轮播在店面首页） |
+| 发活动（带关联项） | `crab shop campaign add <标题> [--subtitle … --description …] --link "看直播\|https://…" --coupon <券id> --products <商品id,id> --store <slug>`（关联项可重复，顺序即活动页展示顺序） |
+| 改 / 删活动 | `crab shop campaign edit <id\|前缀> [--title … --enabled on\|off --sort N]`（关联项 flags 任一给出 = 整单替换全部，`--items-clear` 清空，不给则不动）· `crab shop campaign rm <id\|前缀>` |
 | 改 / 删会员等级 | `crab shop tier edit <id\|名称> [--name 新名称 --threshold-cents 分 --benefits 文本 --enabled on\|off]`（只改显式给出的字段）· `crab shop tier delete <id\|名称>` |
 
 商品引用统一 `<id|SKU码>`：id 优先，SKU 码店内反查（组合码优先于商品级码）。
@@ -77,8 +82,9 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 
 商品/库存命令的写操作（create/update/spec/archive/stock/listed）需要
 `products` 权限；优惠券写操作（coupon create/grant/on/off、coupon code
-add/on/off/rm）需要 `marketing` 权限、会员等级写操作（tier add/edit/delete）
-需要 `customers` 权限；列表、详情与台账只需成员身份。
+add/on/off/rm）与公告/活动写操作（announcement/campaign 的 add/edit/rm）需要
+`marketing` 权限、会员等级写操作（tier add/edit/delete）需要 `customers`
+权限；列表、详情与台账只需成员身份。公告/活动的时间窗可空 = 长期/不限。
 
 业务身份（--biz）：`sales` / `support`，逗号分隔可多选——决定客户归属与业绩
 归因资格，与权限正交。
