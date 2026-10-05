@@ -1,6 +1,6 @@
 ---
 name: crabcloud-shop
-description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, coupons, announcements and campaigns, storefront homepage decoration blocks, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "公告", "活动", "首页装修", "装修", "会员等级", "商店订单", "店铺成员", "店铺设置", "SKU 前缀", "客服电话", "微信号", "货币", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
+description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, store settings (SKU prefix, currency, contact info), products, stock and inventory, coupons, announcements and campaigns, storefront homepage decoration blocks, membership tiers, customers and customer wallets (balance, points, recharge packs), members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles, check customers or wallet balances ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "公告", "活动", "首页装修", "装修", "会员等级", "商店订单", "店铺成员", "店铺设置", "SKU 前缀", "客服电话", "微信号", "货币", "客户", "余额", "积分", "充值", "钱包", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
 ---
 
 # Crab Cloud 商店（crab shop）
@@ -62,6 +62,11 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 改装修块 | `crab shop decor edit <id\|前缀> [--title … --slide … --products … --text … --image none --height lg --style scroll --enabled on\|off …]`（读改写只改显式字段；列表字段给了 = 整体替换；类型不可改，改类型 = 删了重建） |
 | 装修块启停 / 排序 / 删除 | `crab shop decor on\|off <id\|前缀>`（停用即刻从买家端隐藏）· `crab shop decor move <id\|前缀> <up\|down>`（页面顺序）· `crab shop decor rm <id\|前缀>` |
 | 改 / 删会员等级 | `crab shop tier edit <id\|名称> [--name 新名称 --threshold-cents 分 --benefits 文本 --enabled on\|off]`（只改显式给出的字段）· `crab shop tier delete <id\|名称>` |
+| 看客户（含余额/积分） | `crab shop customers [--assigned <id\|unassigned>] [--limit N --offset N] --store <slug>`（等级/订单数/消费/余额/积分随列） |
+| 看客户档案 / 钱包流水 | `crab shop customer <id\|邮箱> --store <slug>`（资料 + 最近钱包流水：充值/抵扣/释放/返积分明细） |
+| 看充值档位 | `crab shop packs --store <slug>`（实付 + 赠送 = 到账余额；买家充值进余额不可提现） |
+| 建 / 改 / 删充值档位 | `crab shop pack add --price-cents 10000 [--bonus-cents 1000 --sort N --enabled off]` · `crab shop pack edit <id> [--price-cents … --bonus-cents … --sort … --enabled on\|off]` · `crab shop pack rm <id>`（marketing 权限；每店上限 20；已创建的充值订单不受删档影响） |
+| 设消费返积分 | `crab shop settings edit --points-rate N --store <slug>`（每消费 1 元返 N 积分；0 = 不返；写需 settings 权限） |
 
 商品引用统一 `<id|SKU码>`：id 优先，SKU 码店内反查（组合码优先于商品级码）。
 
