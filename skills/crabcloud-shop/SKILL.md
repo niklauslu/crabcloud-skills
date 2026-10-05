@@ -1,6 +1,6 @@
 ---
 name: crabcloud-shop
-description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, coupons, announcements and campaigns, storefront homepage decoration blocks, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "公告", "活动", "首页装修", "装修", "会员等级", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
+description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, coupons, announcements and campaigns, storefront homepage decoration blocks, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "优惠券", "发券", "公告", "活动", "首页装修", "装修", "会员等级", "商店订单", "店铺成员", "店铺设置", "SKU 前缀", "客服电话", "微信号", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
 ---
 
 # Crab Cloud 商店（crab shop）
@@ -30,6 +30,8 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 店铺成员（权限组合/业务身份） | `crab shop members --store <slug>` |
 | 改成员权限 / 业务身份 | `crab shop member edit <用户名> --perms products,orders --biz sales --store <slug>` |
 | 查看 / 重置常驻邀请链接 | `crab shop invite [--reset --perms orders,customers --biz sales] --store <slug>` |
+| 看店铺资料（SKU 前缀/联系方式/链接） | `crab shop settings [--store <slug>] [--json]` |
+| 改店铺资料 / SKU 前缀 / 联系方式 | `crab shop settings edit [--name … --tagline … --description … --sku-prefix … --contact-email … --contact-phone … --contact-wechat …] --store <slug>`（给 flag 才改；前缀自动大写去非法字符截 8 位、空串 = 纯流水；联系方式传空串 = 清除；写需 `settings` 权限） |
 | 看分类（多级树） | `crab shop categories --store <slug>`（缩进树 + 商品数 + id） |
 | 加分类 / 加子分类 | `crab shop category add <名称> [--parent <id或名称>] --store <slug>`（新建落同级末尾） |
 | 分类改名 / 排序 / 删除 | `crab shop category rename <id或名称> <新名称>` · `crab shop category move <id或名称> <up\|down>`（同级换位，边界不动）· `crab shop category delete <id或名称>`（有子级拒绝；叶子删除后商品迁入「未分类」） |
@@ -88,7 +90,8 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 `products` 权限；优惠券写操作（coupon create/grant/on/off、coupon code
 add/on/off/rm）、公告/活动写操作（announcement/campaign 的 add/edit/rm）与
 首页装修写操作（decor add/edit/on/off/move/rm）需要 `marketing` 权限、会员
-等级写操作（tier add/edit/delete）需要 `customers` 权限；列表、详情与台账
+等级写操作（tier add/edit/delete）需要 `customers` 权限、店铺资料写操作
+（settings edit）需要 `settings` 权限；列表、详情与台账
 只需成员身份。公告/活动的时间窗可空 = 长期/不限；装修块无时间窗，enabled
 即上下架；装修块引用的图片/商品/分类/券/活动必须本店存在（跨店引用报
 bad_blocks）。
