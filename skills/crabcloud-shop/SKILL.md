@@ -1,6 +1,6 @@
 ---
 name: crabcloud-shop
-description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
+description: Manage the user's Crab Cloud shop stores through the `crab` CLI — store status, opening applications, products, stock and inventory, membership tiers, members and role presets. Use this skill when the user asks about their shops, wants to open or apply for a store, create or update products, adjust stock, manage membership tiers, check orders or inventory movements, manage store members/roles ("我的店铺", "开店", "上架商品", "改库存", "出入库", "会员等级", "商店订单", "店铺成员", "crab shop"), or asks what their stores look like — even if they never say "crab" or "Crab Cloud" explicitly.
 ---
 
 # Crab Cloud 商店（crab shop）
@@ -42,6 +42,9 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 入库 / 出库 / 盘点 | `crab shop stock in\|out\|set <id\|SKU码> --amount N [--variant "红/M"] --note "说明"`（实物动仓库账；数字限量同命令走上架账；set 或未给 --reason 必带 --note） |
 | 设销售库存（上架额度） | `crab shop listed <id\|SKU码> --stock N [--variant …]`（仅实物；0 ≤ N ≤ 实际库存，不够先入库） |
 | 看出入库台账 | `crab shop movements [--product <id\|SKU码>] [--limit N --offset N]`（新→旧；发货/退款自动落账也在内） |
+| 看会员等级 | `crab shop tiers --store <slug>`（按累计实付门槛升序；每店上限 10 级） |
+| 加会员等级 | `crab shop tier add <名称> --threshold-cents 10000 [--benefits "权益说明"] [--enabled off] --store <slug>`（默认启用；名称店内唯一；门槛整数分 10000 = $100.00） |
+| 改 / 删会员等级 | `crab shop tier edit <id\|名称> [--name 新名称 --threshold-cents 分 --benefits 文本 --enabled on\|off]`（只改显式给出的字段）· `crab shop tier delete <id\|名称>` |
 
 商品引用统一 `<id|SKU码>`：id 优先，SKU 码店内反查（组合码优先于商品级码）。
 
@@ -67,7 +70,8 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 `team`（团队管理）· `settings`（店铺设置）
 
 商品/库存命令的写操作（create/update/spec/archive/stock/listed）需要
-`products` 权限；列表、详情与台账只需成员身份。
+`products` 权限；会员等级写操作（tier add/edit/delete）需要 `customers`
+权限；列表、详情与台账只需成员身份。
 
 业务身份（--biz）：`sales` / `support`，逗号分隔可多选——决定客户归属与业绩
 归因资格，与权限正交。
