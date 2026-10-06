@@ -51,7 +51,13 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 看优惠券 | `crab shop coupons [--status active\|disabled] --store <slug>`（发放/核销 + 码数；券无主码） |
 | 新建优惠券 | `crab shop coupon create --kind amount_off\|percent_off --name 名称 [--amount-cents N \| --percent N] [--min-spend-cents N] [--max-uses N] [--per-user N] [--valid-days N] [--expires YYYY-MM-DD] [--auto-trigger register\|order_paid] --store <slug>`（所有券先领取/兑换再使用；--valid-days = 领取后 N 天有效、--expires = 可领取截止，可并存；--auto-trigger = 新用户自动发 / 该店订单支付后自动发） |
 | 给兑换码 / 看兑换码 | `crab shop coupon code add <id> [--count N] [--code 码] [--max-uses N] [--note 渠道]`（批量 ≤100 或单个自定义码，每码独立限次）· `crab shop coupon codes <id>` |
-| 定向发券 | `crab shop coupon grant <id> --emails "a@x.com,b@x.com" [--notify] --store <slug>`（逐邮箱造专属券码进对方卡包；--notify 发通知邮件） |
+| 定向发券 | `crab shop coupon grant <id> --accounts "用户名1,用户名2" --store <slug>`（平台账号直发，券绑账号进其卡包；找不到用户名会报错）· 邮箱兜底 `--emails "a@x.com,b@x.com"`；`--notify` 发通知邮件 |
+| 看订单 | `crab shop orders [--status pending\|paid\|canceled\|refunded] --store <slug>`（新→旧；复制完整订单 id 供 order 子命令） |
+| 看订单详情 | `crab shop order <订单id>`（金额口径 / 券减 / 余额抵扣 / 支付流水 / 授权 / 出库记录） |
+| 待付单改价 | `crab shop order reprice <订单id> --amount 88.00`（mock 待支付单限定；Stripe 单价格冻结不可改；新应付 ≥ 已抵扣余额） |
+| 确认收款 | `crab shop order confirm <订单id>`（线下收款后手动转已支付；mock 单限定；Stripe 单走线上收银台） |
+| 取消 / 退款 | `crab shop order cancel <订单id>`（待付单，回补库存 / 释放券与余额）· `crab shop order refund <订单id>`（已支付单全额退款，实物回仓、券与钱包回滚；aftercare 权限） |
+| 实物发货 | `crab shop order ship <订单id> --tracking 单号 [--qty N]`（默认发剩余全部；自动扣仓库账；orders 权限） |
 | 看领取记录 / 启停 | `crab shop coupon claims <id> [--status unused\|used]` · `crab shop coupon on\|off <id>` |
 | 删 / 启停兑换码 | `crab shop coupon code rm <码>`（已使用的码只能停用不能删）· `crab shop coupon code on\|off <码>` |
 | 看会员等级 | `crab shop tiers --store <slug>`（按累计实付门槛升序；每店上限 10 级） |
@@ -115,5 +121,6 @@ bad_blocks）。
 - `shop invite --reset` 会使旧链接立即作废——先和用户确认再重置。
 - 优惠券纪律：所有券先领取/兑换再使用（买家在店面领券卡或领券中心输兑换码），
   结账一单一券不叠加；`grant --notify` 按封扣积分，积分不足自动跳过邮件；
-  删除仅限未使用的兑换码。
-- 订单/发货/售后命令按批次扩充；本 skill 随 CLI 更新同步维护。
+  发放优先 `--accounts`（绑账号、买家登录即见）；删除仅限未使用的兑换码。
+- 订单操作门槛：改价/确认收款仅 mock 待支付单（Stripe 单价格冻结、走线上）；
+  取消仅待付单、退款仅已支付单；发货仅实物已支付单。
