@@ -27,9 +27,13 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 切换当前管理的店（多店账号） | `crab shop use <slug>`（持久；status 里 ★ = 当前店） |
 | 开店 / 再开一家 | `crab shop apply <店铺名> [--tagline 一句话介绍]` |
 | 店铺角色预设（权限模板） | `crab shop roles --store <slug>` |
-| 店铺成员（权限组合/业务身份） | `crab shop members --store <slug>` |
-| 改成员权限 / 业务身份 | `crab shop member edit <用户名> --perms products,orders --biz sales --store <slug>` |
-| 查看 / 重置常驻邀请链接 | `crab shop invite [--reset --perms orders,customers --biz sales] --store <slug>` |
+| 店铺成员（权限组合） | `crab shop members --store <slug>` |
+| 改成员权限 | `crab shop member edit <用户名> --perms products,orders --store <slug>` |
+| 查看 / 重置常驻邀请链接 | `crab shop invite [--reset --perms orders,customers] --store <slug>` |
+| 客服列表（名片/关联成员/名下客户/绑定链接） | `crab shop cs --store <slug>` |
+| 添加客服（可选关联店铺成员） | `crab shop cs add <名称> [--member <用户名>] --store <slug>` |
+| 编辑客服 / 清除关联 | `crab shop cs edit <id\|前缀> [--name 新名] [--member <用户名>\|none] --store <slug>` |
+| 删除客服 / 重置绑定链接 | `crab shop cs rm <id\|前缀>` · `crab shop cs reset <id\|前缀> --store <slug>`（重置后旧绑定链接作废；删除后名下客户转未分配） |
 | 看店铺资料（SKU 前缀/货币/联系方式/链接） | `crab shop settings [--store <slug>] [--json]` |
 | 改店铺资料 / SKU 前缀 / 货币 / 联系方式 | `crab shop settings edit [--name … --tagline … --description … --sku-prefix … --currency CNY\|USD\|EUR\|GBP\|HKD --contact-email … --contact-phone … --contact-wechat …] --store <slug>`（给 flag 才改；前缀自动大写去非法字符截 8 位、空串 = 纯流水；货币切换全店商品行同步、价格数值不变；联系方式传空串 = 清除；写需 `settings` 权限） |
 | 看分类（多级树） | `crab shop categories --store <slug>`（缩进树 + 商品数 + id） |
@@ -101,8 +105,9 @@ add/on/off/rm）、公告/活动写操作（announcement/campaign 的 add/edit/r
 即上下架；装修块引用的图片/商品/分类/券/活动必须本店存在（跨店引用报
 bad_blocks）。
 
-业务身份（--biz）：`sales` / `support`，逗号分隔可多选——决定客户归属与业绩
-归因资格，与权限正交。
+客服（shop cs）：独立名片实体（头像 web 端传，CLI 管文字字段与绑定链接），
+客户归属按客服记——买家扫绑定链接或二维码登录后即绑为该店专属客服（重复
+绑定 = 覆盖）；删除客服后名下客户转未分配、绑定链接立即失效。
 
 ## 纪律
 
