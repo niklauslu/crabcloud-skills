@@ -27,8 +27,10 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 切换当前管理的店（多店账号） | `crab shop use <slug>`（持久；status 里 ★ = 当前店） |
 | 开店 / 再开一家 | `crab shop apply <店铺名> [--tagline 一句话介绍]` |
 | 店铺角色预设（权限模板） | `crab shop roles --store <slug>` |
+| 经营概览 | `crab shop overview`（今日/本月营收与单量、待支付/待发货计数、最近五单） |
 | 店铺成员（权限组合） | `crab shop members --store <slug>` |
 | 改成员权限 | `crab shop member edit <用户名> --perms products,orders --store <slug>` |
+| 移出成员 | `crab shop member rm <用户名> --store <slug>`（客服名片保留、客户归属不受影响） |
 | 查看 / 重置常驻邀请链接 | `crab shop invite [--reset --perms orders,customers] --store <slug>` |
 | 客服列表（名片/关联成员/名下客户/绑定链接） | `crab shop cs --store <slug>` |
 | 添加客服（可选关联店铺成员） | `crab shop cs add <名称> [--member <用户名>] --store <slug>` |
@@ -41,7 +43,7 @@ description: Manage the user's Crab Cloud shop stores through the `crab` CLI —
 | 分类改名 / 排序 / 删除 | `crab shop category rename <id或名称> <新名称>` · `crab shop category move <id或名称> <up\|down>`（同级换位，边界不动）· `crab shop category delete <id或名称>`（有子级拒绝；叶子删除后商品迁入「未分类」） |
 | 看商品列表 | `crab shop products [--status draft\|active\|archived] [--category <id或名称>] [--q 文本] [--limit N --offset N]`（多规格行库存 = 变体合计） |
 | 看商品详情 | `crab shop product <id\|SKU码>`（先 id 直查、404 再按店内码反查；含规格组合与两层库存） |
-| 新建商品 | `crab shop product create --kind physical\|digital --name 名称 --variant-mode single\|multi [--spec-axis "颜色=红,蓝"]… --price-cents 1990 [--status draft\|active]`（类型与规格模式创建即锁定；多规格可先只建轴，组合价后续 spec 配置） |
+| 新建商品 | `crab shop product create --kind physical\|digital --name 名称 --variant-mode single\|multi [--spec-axis "颜色=红,蓝"]… --price-cents 1990 [--status draft\|active]`（类型与规格模式创建即锁定；多规格可先只建轴，组合价后续 spec 配置；**实物创建期不录销售库存**——入库后经 `shop listed` 设额度，`--stock` 仅数字限量） |
 | 改商品资料 / 上下架 | `crab shop product update <id\|SKU码> [--name … --price-cents N --category <id\|名称\|none> --status active …]`（类型与规格模式不可变；clear 撤销划线价/限购） |
 | 配多规格组合价 / 启停组合 | `crab shop product spec <id> --set "红,M=1990,2500,on" …`（值按轴顺序；未提及组合保持原值；不改库存） |
 | 下架归档商品 | `crab shop product archive <id\|SKU码>`（软删；恢复 = product update --status draft） |
