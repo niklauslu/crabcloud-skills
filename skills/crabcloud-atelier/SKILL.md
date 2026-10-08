@@ -63,23 +63,25 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 
 多工坊账号用 `--org org:<名称>`（或工坊 id）指定；仅一个工坊时自动采用。
 
-## 系列与款式库
+## 系列批次与款式库
 
-阶段是**定位标记不是状态机**（企划 → 设计 → 打样 → 审版 → 核算 → 生产 → 完成；
+**系列批次**（企划容器）：标题 + 年月（`YYYY-MM` 必填）+ 选填说明 + 归档状态——
+归档不是删除，可随时恢复；归档后新建款式不可再挂该系列，存量款式引用不受影响。
+款式阶段是**定位标记不是状态机**（企划 → 设计 → 打样 → 审版 → 核算 → 生产 → 完成；
 搁置为旁路）——任意阶段可编辑、可补录，阶段变更自动落时间线。金额一律**整数分**
-（`--retail-cents 19900` = ¥199.00）。
+（`--retail-cents 19900` = ¥199.00）。款号 = 工坊内唯一业务主键（重复建档 409）。
 
 | 意图 | 命令 |
 |---|---|
-| 看系列 | `crab atelier collections`（名称/季度/在库款数） |
-| 建系列 | `crab atelier collection create "2026 秋冬" [--season AW26] [--note 备注]` |
+| 看系列 | `crab atelier collections [--status active\|archived\|all] [--q 关键字]`（默认只看进行中；带状态计数） |
+| 建系列 | `crab atelier collection create "2026 秋冬首批" --ym 2026-09 [--note 备注]`（年月必填） |
+| 改系列 | `crab atelier collection edit <id> [--name ... --ym 2026-10 --note ...]`（给的 flag 才改） |
+| 归档 / 恢复 | `crab atelier collection archive <id>` / `crab atelier collection restore <id>`（幂等无删除） |
 | 看款式库 | `crab atelier styles [--q 关键字] [--stage 打样] [--collection <id>] [--page N]`（带阶段分布计数） |
 | 看一款 | `crab atelier style <id>`（卡片 + 轮次时间线 + 最近事件，一次取全） |
-| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ...] [--retail-cents 199000] [--colorways 驼色,黑] [--notes ...]` |
+| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ...] [--retail-cents 199000] [--colorways 驼色,黑] [--notes ...]`（款号唯一；归档系列不可挂） |
 | 编辑款式 | `crab atelier style edit <id> --stage 打样`（给的 flag 才改；`--collection clear` 解绑系列） |
 | 登记配色 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝`（整体替换） |
-
-款号 = 工坊内唯一业务主键（`--code`，自由录入）；建档自动落时间线。
 
 ## 样衣轮次与审版
 
@@ -124,4 +126,6 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
   与用户确认；结论与意见是研发档案证据链，写了就进时间线。
 - 金额一律整数分（`--retail-cents` 等 `*-cents` flag）；禁止元/浮点输入。
 - 阶段是定位标记不是审批流：不要替用户「推进阶段」，除非明确要求。
+- 系列**归档不是删除**（可恢复）；归档后新建款式不可再挂，不要建议「删掉重建」。
+- 款号是工坊内唯一业务主键：建档前如不确定是否已有同款号，先 `styles --q <款号>` 查。
 - 多工坊账号务必确认 `--org` 后再写，写错工坊的数据不属于本工坊。
