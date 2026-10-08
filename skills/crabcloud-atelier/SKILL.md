@@ -1,15 +1,15 @@
 ---
 name: crabcloud-atelier
-description: Fashion R&D workshop management via the `crab atelier` CLI — apply to create an atelier, manage members & permission sets, invite links, roles, collections, styles (with stage markers), sample rounds (proto/fit/pp with structured fitting notes and verdicts), the org-wide record stream and the desk digest. Use when the user asks anything about their fashion atelier on Crab Cloud: 工坊、款式、样衣、打样、审版、样衣轮次、系列、款号、配色、设计师、服装研发、核价准备、建坊、成员、权限、邀请链接、岗位、记录、工作台 — even if they never say "crab".
+description: Fashion R&D workshop management via the `crab atelier` CLI — apply to create an atelier, manage members & permission sets, invite links, roles, collections, styles (with stage markers), sample rounds (proto/fit/pp with structured fitting notes and verdicts), the supplier directory (fabric vendors & factories), the org-wide record stream and the desk digest. Use when the user asks anything about their fashion atelier on Crab Cloud: 工坊、款式、样衣、打样、审版、样衣轮次、系列、款号、配色、设计师、服装研发、核价准备、建坊、成员、权限、邀请链接、岗位、记录、工作台、供应商、面辅料、加工厂 — even if they never say "crab".
 ---
 
 # Crab Cloud 服装研发工坊（crab atelier）
 
 管理服装研发工坊：成员与权限集、邀请链接、岗位（权限组合模板）、系列（企划容器）、
 款式库（款号 + 阶段定位标记 + 配色 + 样衣轮次）、样衣时间线（头样/改样/产前样 +
-结构化修改意见 + 审版结论）、全量记录流与工作台聚合。独立产品「Atelier · Crab
-Cloud」，同一套 REST API 服务 Web 与 CLI。款（style）是唯一锚点——建档、轮次、
-结论都挂在款上并自动落时间线。
+结构化修改意见 + 审版结论）、供应商目录（面辅料商家 / 加工厂）、全量记录流与
+工作台聚合。独立产品「Atelier · Crab Cloud」，同一套 REST API 服务 Web 与 CLI。
+款（style）是唯一锚点——建档、轮次、结论都挂在款上并自动落时间线。
 
 跨域时参考：邮件 `crabcloud-mail`、云盘 `crabcloud-storage`、协作
 `crabcloud-collab`、店铺 `crabcloud-shop`、人事行政 `crabcloud-hr`、平台账号
@@ -83,6 +83,20 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 编辑款式 | `crab atelier style edit <id> --stage 打样`（给的 flag 才改；`--collection clear` 解绑系列） |
 | 登记配色 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝`（整体替换） |
 
+## 供应商目录
+
+面辅料商家 `fabric` / 加工厂 `factory` 两类，字段 = 类型 + 名称 + 联系人 +
+联系方式（电话/微信自由文本单字段）+ 地址 + 备注。归档不是删除——归档后供应商
+选择器不再出（面辅料库、制单生产引用时），存量引用不受影响，可随时恢复。
+写需 `materials` 或 `production` 任一权限。
+
+| 意图 | 命令 |
+|---|---|
+| 看供应商 | `crab atelier suppliers [--type fabric\|factory] [--status active\|archived\|all] [--q 关键字]`（默认只看在册；带状态与类型双维计数） |
+| 建档 | `crab atelier supplier create "绍兴晨曦纺织" --type fabric [--contact-name 王经理 --contact 139xxx --address 地址 --note 备注]` |
+| 编辑 | `crab atelier supplier edit <id> [--type ... --name ... --contact-name ... --contact ... --address ... --note ...]`（给的 flag 才改） |
+| 归档 / 恢复 | `crab atelier supplier archive <id>` / `crab atelier supplier restore <id>`（幂等无删除） |
+
 ## 样衣轮次与审版
 
 轮次类型：`proto` 头样 / `fit` 改样（自动递增改样序号）/ `pp` 产前样。流程：
@@ -111,6 +125,7 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
   款式字段 camelCase，`latestRound` = 最新一轮摘要（kind/fitSeq/roundNo/status）
 - `crab atelier style <id> --json` → `{ style, samples, events }`（轮次新→旧、事件新→旧最近 50）
 - `crab atelier samples <styleId> --json` → `[{ id, kind, fitSeq, roundNo, status, costCents, notes: [{part, issue, fix}], ... }]`
+- `crab atelier suppliers --json` → `{ suppliers: [...], total, page, totalPages, statusCounts, typeCounts }`
 - `crab atelier records --json` → `{ records: [...], total, page, totalPages }`
 - `crab atelier desk --json` → `{ org, stats: { totalStyles, activeStyles, samplingStyles, reviewPending, stageCounts }, reviewTodos, recentRecords }`
 - `crab atelier invite --json` → `{ token, createdAt, link }`
@@ -128,4 +143,6 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 - 阶段是定位标记不是审批流：不要替用户「推进阶段」，除非明确要求。
 - 系列**归档不是删除**（可恢复）；归档后新建款式不可再挂，不要建议「删掉重建」。
 - 款号是工坊内唯一业务主键：建档前如不确定是否已有同款号，先 `styles --q <款号>` 查。
+- 供应商**归档不是删除**（可恢复）；归档只影响选择器，存量引用不受影响——不要
+  建议「删掉重录」。联系人/联系方式是自由文本，不要拆成结构化字段。
 - 多工坊账号务必确认 `--org` 后再写，写错工坊的数据不属于本工坊。
