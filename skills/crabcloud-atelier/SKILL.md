@@ -5,7 +5,7 @@ description: Fashion R&D workshop management via the `crab atelier` CLI — appl
 
 # Crab Cloud 服装研发工坊（crab atelier）
 
-管理服装研发工坊：成员与权限集、邀请链接、岗位（权限组合模板）、系列（企划容器）、
+管理服装研发工坊：成员与权限集、邀请链接、岗位（权限组合模板）、系列（批次容器）、
 款式库（款号 + 阶段定位标记 + 配色 + 样衣轮次）、样衣时间线（头样/改样/产前样 +
 结构化修改意见 + 审版结论）、供应商目录（面辅料商家 / 加工厂）、全量记录流与
 工作台聚合。独立产品「Atelier · Crab Cloud」，同一套 REST API 服务 Web 与 CLI。
@@ -65,10 +65,10 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 
 ## 系列批次与款式库
 
-**系列批次**（企划容器）：标题 + 年月（`YYYY-MM` 必填）+ 选填说明 + 归档状态——
+**系列批次**（批次容器）：标题 + 年月（`YYYY-MM` 必填）+ 选填说明 + 归档状态——
 归档不是删除，可随时恢复；归档后新建款式不可再挂该系列，存量款式引用不受影响。
-款式阶段是**定位标记不是状态机**（企划 → 设计 → 打样 → 审版 → 核算 → 生产 → 完成；
-搁置为旁路）——任意阶段可编辑、可补录，阶段变更自动落时间线。金额一律**整数分**
+款式阶段是**定位标记不是状态机**（设计 → 核算 → 生产 → 完成；打样与审版收在
+设计段内）——任意阶段可编辑、可补录，阶段变更自动落时间线。金额一律**整数分**
 （`--retail-cents 19900` = ¥199.00）。款号 = 工坊内唯一业务主键（重复建档 409）。
 
 | 意图 | 命令 |
@@ -77,10 +77,10 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 建系列 | `crab atelier collection create "2026 秋冬首批" --ym 2026-09 [--note 备注]`（年月必填） |
 | 改系列 | `crab atelier collection edit <id> [--name ... --ym 2026-10 --note ...]`（给的 flag 才改） |
 | 归档 / 恢复 | `crab atelier collection archive <id>` / `crab atelier collection restore <id>`（幂等无删除） |
-| 看款式库 | `crab atelier styles [--q 关键字] [--stage 打样] [--collection <id>] [--page N]`（带阶段分布计数） |
+| 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--page N]`（带阶段分布计数） |
 | 看一款 | `crab atelier style <id>`（卡片 + 轮次时间线 + 最近事件，一次取全） |
 | 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ...] [--retail-cents 199000] [--colorways 驼色,黑] [--notes ...]`（款号唯一；归档系列不可挂） |
-| 编辑款式 | `crab atelier style edit <id> --stage 打样`（给的 flag 才改；`--collection clear` 解绑系列） |
+| 编辑款式 | `crab atelier style edit <id> --stage 生产`（给的 flag 才改；`--collection clear` 解绑系列） |
 | 登记配色 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝`（整体替换） |
 
 ## 供应商目录
@@ -102,7 +102,7 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 轮次类型：`proto` 头样 / `fit` 改样（自动递增改样序号）/ `pp` 产前样。流程：
 发起轮次 → 打样中 → （登记修改意见）→ 登记回样转审版中 → 下结论。
 结论流转：`approved`（产前样通过自动转核算）/ `rejected`（打回重做，回打样）/
-`dropped`（放弃，款式搁置）。
+`dropped`（放弃本轮，款式阶段不动）。
 
 | 意图 | 命令 |
 |---|---|
@@ -137,8 +137,8 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
   建档 / 改阶段 / 发轮次 / 下审版结论前，先向用户复述将要发生的动作。
 - **权限是整体替换**：`member set --permissions` 是「该成员写权限全集」，不是增量——
   改一个人的权限先 `members` 看现值再给全集，避免误删既有权限。
-- 审版结论改变款式走向（approved 转核算 / rejected 回打样 / dropped 搁置），下结论前
-  与用户确认；结论与意见是研发档案证据链，写了就进时间线。
+- 审版结论改变款式走向（approved 转核算 / rejected 回打样 / dropped 弃用本轮、
+  款式阶段不动），下结论前与用户确认；结论与意见是研发档案证据链，写了就进时间线。
 - 金额一律整数分（`--retail-cents` 等 `*-cents` flag）；禁止元/浮点输入。
 - 阶段是定位标记不是审批流：不要替用户「推进阶段」，除非明确要求。
 - 系列**归档不是删除**（可恢复）；归档后新建款式不可再挂，不要建议「删掉重建」。
