@@ -103,25 +103,26 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 关联人员整体替换）；**审版是款级动作**（不挂单个稿件）——通过时当前轮全部未定版
 稿件各自定版（每类 style+kind 内递增 vN，如「设计稿 v1、纸样稿 v1」），不通过留
 当前稿继续改。素材与审版图走 Web 端上传（atelier 存储域，owner 云盘「服装研发」
-分类）。**`crab atelier samples/sample ...` 命令面属旧样衣轮次模型已退役待清理，
-勿再使用**；打样操作请走 Web 款式详情「打样」tab。
+分类）。**打样不进 CLI**——旧 `crab atelier samples/sample ...` 命令面已随轮模型
+退役（已从命令面移除），打样操作请走 Web 款式详情「打样」tab；CLI 侧款式
+`style <id>` 详情可看款式卡片与时间线。
 
 ## 记录与工作台
 
 | 意图 | 命令 |
 |---|---|
-| 全量记录流 | `crab atelier records [--type sample\|costing\|production\|note] [--page N]`（各款时间线汇聚） |
-| **总览（推荐首入口）** | `crab atelier desk`——款式统计带（总数/进行中/打样中/完成）+ 最近记录，一次取全 |
+| 全量记录流 | `crab atelier records [--type sample\|costing\|production\|note] [--page N]`（各款时间线汇聚；端点随切片上线） |
+| **总览（推荐首入口）** | `crab atelier desk`——款式统计带（总数/进行中/打样中/完成）+ 阶段分布 + 资源速览（在册系列/面辅料/加工厂）+ 最近记录，一次取全 |
 
 ## 机器可读输出（--json）
 
 - `crab atelier orgs --json` → `[{ id, name, status, myRole, myPermissions, memberCount }]`
 - `crab atelier styles --json` → `{ styles: [...], total, page, totalPages, stageCounts }`；
-  款式字段 camelCase，`latestRound` = 最新一轮摘要（kind/fitSeq/roundNo/status）
+  款式字段 camelCase，`latestRound` = 旧样衣轮次模型遗留摘要（新档为 null）
 - `crab atelier style <id> --json` → `{ style, samples, events }`（samples 为旧模型遗留空表、恒 `[]`；事件新→旧最近 50）
 - `crab atelier suppliers --json` → `{ suppliers: [...], total, page, totalPages, statusCounts, typeCounts }`
 - `crab atelier records --json` → `{ records: [...], total, page, totalPages }`
-- `crab atelier desk --json` → `{ org, stats: { totalStyles, activeStyles, samplingStyles, reviewPending, stageCounts }, reviewTodos, recentRecords }`
+- `crab atelier desk --json` → `{ org, stats: { totalStyles, activeStyles, doneStyles, samplingStyles, reviewPending, stageCounts, activeCollections, suppliersFabric, suppliersFactory }, reviewTodos, recentRecords }`
 - `crab atelier invite --json` → `{ token, createdAt, link }`
 - 时间字段一律纪元毫秒；金额字段 `*Cents` 一律整数分
 
