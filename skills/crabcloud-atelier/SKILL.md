@@ -14,6 +14,13 @@ description: Fashion R&D workshop management via the `crab atelier` CLI — appl
 `crabcloud-collab`、店铺 `crabcloud-shop`、人事行政 `crabcloud-hr`、平台账号
 `crabcloud`。
 
+## 网页操作在哪点（references/web-ui.md）
+
+用户问「网页上在哪里操作 / 点哪里」——建款、传稿、审版、核价、制单、报数、
+入库、加人调权限、打印单据——按 **`references/web-ui.md`** 指路（同目录分册）：
+产品库四板块 + 款式详情六流程 tab（信息/打样/核算/制单/报数/入库）+ 记录页
+三 tab + 设置页四 tab，含常见意图 → 操作位置对照表与权限速查。
+
 ## 第一步：确认可用
 
 - 运行 `crab --version` 确认已安装。`crab` 命令缺失时先 `npx @crabcloud/cli init`
@@ -141,8 +148,7 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 回货分批多次，单据累计对账「已入库 X/件数 Y」，累计 ≥ 件数即可在 Web 入库
 tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可超单据件数（超产/
 多交真实存在）——Web 侧超量弹窗二次确认，CLI 提交成功后输出 ⚠ 超量警告行；
-代报时见到 ⚠ 先向用户复述确认再继续。Web 侧：报数在款式详情「报数」tab
-（选单 → 矩阵报数）、入库在「入库」tab，制单在「制单」tab（2026-10-11 拆分）。
+代报时见到 ⚠ 先向用户复述确认再继续。Web 操作位置见 `references/web-ui.md`。
 
 | 意图 | 命令 |
 |---|---|
