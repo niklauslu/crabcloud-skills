@@ -131,16 +131,27 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 留档 + 给工厂）。标题默认「款式名 + 日期」可改。规格明细 = 「色板 × 尺码」
 矩阵：尺寸必有（款式未录尺码 400，先补商品规格）；色板可有可无（单色款不
 填色）。加工厂只收 factory 类型供应商（留空 = 自加工）；交期 = 预计交期。
+**工序列表 = 单据级、默认四道（裁剪/车缝/后整/质检）**：草稿期可增删改名
+（毛织无裁剪、加「绣花（外发）」等例外），确认后冻结，报数按工序名挂。
 建单不自动推进款式阶段（阶段是定位标记，需手动 `style edit --stage 生产`）。
+**报数与回货（2026-10-09 拍板；2026-10-11 矩阵化）**：仅已确认单据可报数/
+登记回货；两者都按单据规格「色 × 码」逐格报数（`--breakdown` 矩阵语法同制
+单，总数 = 服务端按格求和派生、客户端不传总数；单据没订的色码格不可报）。
+报数流水只增不改（QC 简化 = 质检工序的次品数即结果，次品全单口径 ≤ 总数）；
+回货分批多次，单据累计对账「已入库 X/件数 Y」，累计 ≥ 件数即可在 Web 入库
+tab 一键标记款式完成。Web 侧：报数在款式详情「报数」tab（选单 → 矩阵报数）、
+入库在「入库」tab，制单在「制单」tab（2026-10-11 拆分）。
 
 | 意图 | 命令 |
 |---|---|
 | 看一款的制单 | `crab atelier orders <styleId> [--status draft\|confirmed\|voided]`（三态计数随行） |
-| 看一单 | `crab atelier order <orderId>`（标题 + 规格明细 + 快照合计；orderId 见 orders） |
+| 看一单 | `crab atelier order <orderId>`（标题 + 规格明细 + 工序报数累计 + 入库对账 + 快照合计；orderId 见 orders） |
 | 建草稿 | `crab atelier order add <styleId> --breakdown "黑色:S=30,M=45\|米白:S=20" [--title 标题 --supplier <id\|前缀\|名称> --delivery 2026-10-20 --notes 备注]`（--breakdown 色码=件数：多色 `\|` 分段、`色:` 前缀；单色款直接 `"S=10,M=20"`） |
 | 改草稿 | `crab atelier order edit <orderId> [--title ... --breakdown "..." --supplier ... --delivery ... --notes ...]`（仅未确认可编辑） |
 | 确认定稿 | `crab atelier order confirm <orderId>`（快照冻结、可打印；定稿后不可再改） |
 | 作废 | `crab atelier order void <orderId>`（单向终态：不可打印、留档） |
+| 报数 | `crab atelier order log <orderId> --step 裁剪 --breakdown "S=10,M=20" [--defect 2 --note 备注]`（--step 须在单据工序列表内〔order 详情可看〕；--breakdown 按单据规格逐格报、总数服务端按格求和；次品 ≤ 总数） |
+| 登记回货 | `crab atelier order inbound <orderId> --breakdown "S=10,M=20" [--note 备注]`（本批按单据规格逐格填；分批多次；差数 = 未交尾数） |
 
 ## 机器可读输出（--json）
 
@@ -150,9 +161,9 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 - `crab atelier style <id> --json` → `{ style, samples, events }`（samples 为旧模型遗留空表、恒 `[]`；事件新→旧最近 50）
 - `crab atelier suppliers --json` → `{ suppliers: [...], total, page, totalPages, statusCounts, typeCounts }`
 - `crab atelier costing <styleId> --json` → `{ styleId, craftNotes, materials, processes, extras, totals: { materialsCents, processCents, extrasCents, totalCents } }`（行金额服务端算好；数量为毫单位 ×1000）
-- `crab atelier orders <styleId> --json` → `{ orders: [...], total, page, totalPages, statusCounts: { draft, confirmed, voided } }`；订单含 `title`、`orderNo`（款号-seq）、`breakdown`（色板→尺码→件数两级矩阵）、`costingSnapshot`（确认时点冻结）
-- `crab atelier order <orderId> --json` → 制单全量视图（含快照三表 + totals + sizes/sizeChart）
-- `crab atelier records --json` → `{ records: [...], total, page, totalPages }`
+- `crab atelier orders <styleId> --json` → `{ orders: [...], total, page, totalPages, statusCounts: { draft, confirmed, voided } }`；订单含 `title`、`orderNo`（款号-seq）、`breakdown`（色板→尺码→件数两级矩阵）、`steps`（工序列表）、`progress`（各工序报数累计）、`inboundQty`（累计入库）、`costingSnapshot`（确认时点冻结）
+- `crab atelier order <orderId> --json` → 制单全量视图（含快照三表 + totals + sizes/sizeChart + progress + inboundQty）
+- `crab atelier records --json` → `{ records: [...], total, page, totalPages }`（type 含 inbound = 回货入库事件）
 - `crab atelier desk --json` → `{ org, stats: { totalStyles, activeStyles, doneStyles, samplingStyles, reviewPending, stageCounts, activeCollections, suppliersFabric, suppliersFactory }, reviewTodos, recentRecords }`
 - `crab atelier invite --json` → `{ token, createdAt, link }`
 - 时间字段一律纪元毫秒；金额字段 `*Cents` 一律整数分
@@ -172,4 +183,8 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
   建议「删掉重录」。联系人/联系方式是自由文本，不要拆成结构化字段。
 - 制单生命周期：草稿可编辑 → **确认定稿**（不可再改、可打印）→ 作废终态
   （不可打印、留档）。确认/作废前与用户复述单据标题与数量矩阵。
+- 报数/回货**只对已确认单据**，且流水只增不改（写错不能撤，报数前与用户
+  复述工序与色码数量）；两者都按单据规格「色 × 码」矩阵逐格报（`--breakdown`），
+  总数服务端派生——不要凭总数拼矩阵（单据没订的格子会被 400 拒）；报数不影响
+  时间线，回货每笔落「入库」记录。
 - 多工坊账号务必确认 `--org` 后再写，写错工坊的数据不属于本工坊。
