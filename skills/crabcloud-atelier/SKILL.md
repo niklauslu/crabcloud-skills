@@ -91,6 +91,7 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 看一款 | `crab atelier style <id>`（信息按组展示：01 基础信息 / 02 商品规格 / 03 生产信息 / 04 尺寸表〔部位 × 尺码矩阵 + 档差，尺码列随商品规格联动〕，+ 轮次时间线 + 最近事件，一次取全） |
 | 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ...] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
 | 编辑款式 | `crab atelier style edit <id> --stage 生产`（给的 flag 才改；`--collection clear` 解绑系列） |
+| 设款式封面 | `crab atelier style cover <styleId> <本地图片路径>`（png/jpg/webp/gif ≤20MB；走工坊素材中转上传，素材自动进 owner 云盘「服装研发」分类，Web 产品库/详情画册位即显；`--clear` 移除引用素材不删）。封面引用只认工坊素材——云盘直传的通用文件挂不上 |
 | 登记规格 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝 --sizes S,M,L --craft-notes "领口包边，成衣水洗"`（三项各自整体替换——空数组/空串 = 清空；色板与尺码是商品需要的规格，特殊工艺是生产需要的，Web 详情页即按此分组） |
 
 ## 供应商目录
