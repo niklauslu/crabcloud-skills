@@ -55,7 +55,8 @@ atelier 命令需要 **atelier scope + 工坊绑定**的令牌：`crab login --s
 flags 的数组）判定：`styles`（款式库）、`records`（记录）、`materials`（面辅料）、
 `costing`（核价）、`production`（生产）、`team`（成员管理）、`settings`（组织设置）。
 只读不需要 flag——active 成员默认可读全部。岗位是**纯职务标识**（设计师/版师等，
-不影响权限；0124 起与权限解耦），`roles` 只读可查名录；「管理员 = 全功能、成员 =
+不影响权限；0124 起与权限解耦），`roles` 查名录、`role add/rename/rm` 管理；
+「管理员 = 全功能、成员 =
 只读」只是 Web 成员抽屉的快捷预设。新成员初始权限取工坊「新成员默认权限」（默认
 只读，Web 设置页可配）。
 
@@ -66,7 +67,10 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 给人配权限 | `crab atelier member set <memberId> --permissions styles,records`（**整体替换**；`--permissions none` = 只读） |
 | 给人挂岗位 | `crab atelier member set <memberId> --permissions <现有权限不动> --role 版师`（`--role none` = 清除；permissions 必填一并提交） |
 | 设工坊内显示名 | `crab atelier member set <memberId> --permissions styles --display-name "阿May"`（permissions 必填一并提交） |
-| 看岗位名录 | `crab atelier roles`（名字 + 实挂成员数；建改删在 Web 设置页） |
+| 看岗位名录 | `crab atelier roles`（名字 + 实挂成员数） |
+| 建岗位 | `crab atelier role add 版师`（纯职务标识，重名 409；挂人用上面 member set --role） |
+| 岗位改名 | `crab atelier role rename <roleId> <新名称>`（实时生效，不影响已挂成员） |
+| 删岗位 | `crab atelier role rm <roleId>`（**= 摘标记**：挂该岗位的成员被清岗位标记，权限不动；删前与用户复述） |
 | 移除成员 | `crab atelier member rm <memberId>` |
 | 发邀请链接 | `crab atelier invite`（站内 `/join/:token` 加入页：注册用户一键入坊，初始权限 = 工坊新成员默认权限） |
 | 作废旧链接 | `crab atelier invite --reset`（旧链立即失效） |
@@ -89,10 +93,11 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 归档 / 恢复 | `crab atelier collection archive <id>` / `crab atelier collection restore <id>`（幂等无删除） |
 | 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--page N]`（带阶段分布计数） |
 | 看一款 | `crab atelier style <id>`（信息按组展示：01 基础信息 / 02 商品规格 / 03 生产信息 / 04 尺寸表〔部位 × 尺码矩阵 + 档差，尺码列随商品规格联动〕，+ 轮次时间线 + 最近事件，一次取全） |
-| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ...] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
-| 编辑款式 | `crab atelier style edit <id> --stage 生产`（给的 flag 才改；`--collection clear` 解绑系列） |
+| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ... --pattern-maker 纸样师 --sample-maker 版师] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
+| 编辑款式 | `crab atelier style edit <id> --stage 生产 [--pattern-maker 纸样师 --sample-maker 版师]`（给的 flag 才改；`--collection clear` 解绑系列；人员字段均选填自由文本） |
 | 设款式封面 | `crab atelier style cover <styleId> <本地图片路径>`（png/jpg/webp/gif ≤20MB；走工坊素材中转上传，素材自动进 owner 云盘「服装研发」分类，Web 产品库/详情画册位即显；`--clear` 移除引用素材不删）。封面引用只认工坊素材——云盘直传的通用文件挂不上 |
-| 登记规格 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝 --sizes S,M,L --craft-notes "领口包边，成衣水洗"`（三项各自整体替换——空数组/空串 = 清空；色板与尺码是商品需要的规格，特殊工艺是生产需要的，Web 详情页即按此分组） |
+| 登记规格 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝 --sizes S,M,L --craft-notes "领口包边，成衣水洗"`（各项各自整体替换——空数组/空串 = 清空；色板与尺码是商品需要的规格，特殊工艺是生产需要的，Web 详情页即按此分组） |
+| 登记尺寸表 | `crab atelier style edit <id> --size-chart "衣长:2:S=66,M=68,L=70|胸围::S=100"`（**整体替换**，`clear` = 清空；行间 `\|`，行内 `部位:档差:码=值,码=值`——档差可省略或显式留空〔`部位::` = 无档差〕，值 0–1000 留空 = 该格不记；尺码列与商品规格联动，先配 `--sizes` 再录尺寸表；Web 信息 tab 04 组同源。部位枚举（KHARITES 纸单）：后中长/肩宽/胸围/腰围/臀围/脚围/袖长/袖肥/袖口围/夹圈/裤长·裙长/脾围/膝围/前浪/后浪/肩带长——Web 下拉选择 + 其他自填，CLI 自由文本均可） |
 
 ## 供应商目录
 
@@ -123,12 +128,13 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 
 | 意图 | 命令 |
 |---|---|
-| 看核算单 | `crab atelier costing <styleId>`（面辅料/工艺/其他成本行 + 单件合计 + 工艺说明；rowId 都在这里取。A4 打印单在 Web 款式详情「核算」tab） |
-| 加面辅料行 | `crab atelier material add <styleId> --name "澳毛纱" --category fabric --supplier <id\|前缀\|名称> --ref-price-cents 4800 --qty 0.4 --unit 公斤 [--article-no 货号 --spec 规格 --purpose 主面料]`（--qty 小数；金额一律 --*-cents 整数分；供应商引用 id/前缀/名称，clear = 解绑） |
+| 看核算单 | `crab atelier costing <styleId>`（面辅料/工艺/其他成本行 + 单件合计 + 工艺说明；面辅料行带成份/门幅/克重/颜色与制版单耗/损耗/备注等属性行；rowId 都在这里取。A4 打印单在 Web 款式详情「核算」tab） |
+| 加面辅料行 | `crab atelier material add <styleId> --name "澳毛纱" --category fabric --supplier <id\|前缀\|名称> --ref-price-cents 4800 --qty 0.4 --unit 公斤 [--article-no 货号 --spec 规格 --purpose 主面料 --composition "65%锦35%棉" --width 135 --gsm 70 --loss-pct 15 --pattern-usage 0.27 --colors 黑,橘 --supply-mode 现货\|订纺 --parts 所用部位 --shrinkage "经3%纬3%" --interlining-thickness 30g --note 备注]`（--qty/--pattern-usage 小数；**--width 单位 cm、--loss-pct 单位 %**；金额一律 --*-cents 整数分；供应商引用 id/前缀/名称，clear = 解绑） |
 | 加工艺行 | `crab atelier process add <styleId> --name "打鸡眼" --qty 100 --price-cents 100 [--requirement 要求 --supplier ... --unit 次]`（金额自动计入成本核算） |
 | 加其他成本 | `crab atelier extra add <styleId> --name "包装" --price-cents 3000 [--qty 1 --unit ...]`（包装/运费/损耗） |
 | 改/删核算行 | `crab atelier material\|process\|extra edit <rowId> [同 add 的 flag，给的才改]` / `… rm <rowId>`（合计随单自动重算；行编辑与 A4 打印单也可在 Web 核算 tab） |
-| 全量记录流 | `crab atelier records [--type sample\|costing\|production\|note] [--page N]`（各款时间线汇聚；端点随切片上线） |
+| 全量记录流 | `crab atelier records [--type sample\|costing\|production\|inbound\|purchase\|note] [--page N]`（各款时间线汇聚） |
+| **工坊审计（owner 专属）** | `crab atelier audits [--action 前缀] [--page N]`——工坊维度操作留痕（谁做了什么、含 CLI/agent 动作）；非 owner 令牌 403。分类筛选用前缀组：`--action "atelier.member,atelier.role,atelier.invite"` |
 | **总览（推荐首入口）** | `crab atelier desk`——款式统计带（总数/进行中/打样中/完成）+ 阶段分布 + 资源速览（在册系列/面辅料/加工厂）+ 最近记录，一次取全 |
 
 ## 制单与生产（写闸 production）
@@ -150,17 +156,28 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可超单据件数（超产/
 多交真实存在）——Web 侧超量弹窗二次确认，CLI 提交成功后输出 ⚠ 超量警告行；
 代报时见到 ⚠ 先向用户复述确认再继续。Web 操作位置见 `references/web-ui.md`。
+**采购记录（2026-10-12 切片）**：细化 planning「一期不做独立采购单」——逐条
+台账挂已确认制单，**物料必须关联核算面辅料行**（`--material` = 核算行 id，须
+在该单确认时点快照清单内；名称/货号/规格/单位由服务端从快照带出，不自由填）。
+`--amount-cents` = 实付金额整数分（非单价×数量派生）；到货两态单向（待到货 →
+已到货）。对账口径：应买 = 快照单件耗料 × 件数，差数即余缺。删除是金额录错
+兜底（时间线留痕不撤）；Web 的「生产」tab = 采购/报数/入库合流（选单 + 工单头
+  速览 + 三板块上下平铺：01 采购 / 02 报数 / 03 入库）。
 
 | 意图 | 命令 |
 |---|---|
 | 看一款的制单 | `crab atelier orders <styleId> [--status draft\|confirmed\|voided]`（三态计数随行） |
-| 看一单 | `crab atelier order <orderId>`（标题 + 规格明细 + 工序报数累计 + 入库对账 + **报数/回货流水〔含色码矩阵〕** + 快照合计；orderId 见 orders） |
+| 看一单 | `crab atelier order <orderId>`（标题 + 规格明细 + 工序报数累计 + 入库对账 + **采购对账与流水** + **报数/回货流水〔含色码矩阵〕** + 快照合计；orderId 见 orders） |
 | 建草稿 | `crab atelier order add <styleId> --breakdown "黑色:S=30,M=45\|米白:S=20" [--title 标题 --supplier <id\|前缀\|名称> --delivery 2026-10-20 --notes 备注]`（--breakdown 色码=件数：多色 `\|` 分段、`色:` 前缀；单色款直接 `"S=10,M=20"`） |
 | 改草稿 | `crab atelier order edit <orderId> [--title ... --breakdown "..." --supplier ... --delivery ... --notes ...]`（仅未确认可编辑） |
 | 确认定稿 | `crab atelier order confirm <orderId>`（快照冻结、可打印；定稿后不可再改） |
 | 作废 | `crab atelier order void <orderId>`（单向终态：不可打印、留档） |
 | 报数 | `crab atelier order log <orderId> --step 裁剪 --breakdown "S=10,M=20" [--defect 2 --note 备注]`（--step 须在单据工序列表内〔order 详情可看〕；--breakdown 按单据规格逐格报、总数服务端按格求和；次品 ≤ 总数） |
 | 登记回货 | `crab atelier order inbound <orderId> --breakdown "S=10,M=20" [--note 备注]`（本批按单据规格逐格填；分批多次；差数 = 未交尾数） |
+| 看采购台账 | `crab atelier order purchase <orderId>`（物料对账段：应买/已买/余缺/实付合计 + 采购流水） |
+| 记采购 | `crab atelier order purchase add <orderId> --material <costMaterialId> --qty 2.5 --amount-cents N [--supplier <id\|前缀\|名称> --note 备注]`（仅已确认单；--material 须在该单快照内〔order 详情可看快照物料〕；实付金额整数分） |
+| 标记到货 | `crab atelier order purchase recv <purchaseId>`（待到货 → 已到货，单向不可逆） |
+| 删采购 | `crab atelier order purchase rm <purchaseId>`（金额录错兜底；时间线留痕不撤） |
 
 ## 机器可读输出（--json）
 
@@ -171,8 +188,10 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 - `crab atelier suppliers --json` → `{ suppliers: [...], total, page, totalPages, statusCounts, typeCounts }`
 - `crab atelier costing <styleId> --json` → `{ styleId, craftNotes, materials, processes, extras, totals: { materialsCents, processCents, extrasCents, totalCents } }`（行金额服务端算好；数量为毫单位 ×1000）
 - `crab atelier orders <styleId> --json` → `{ orders: [...], total, page, totalPages, statusCounts: { draft, confirmed, voided } }`；订单含 `title`、`orderNo`（款号-seq）、`breakdown`（色板→尺码→件数两级矩阵）、`steps`（工序列表）、`progress`（各工序报数累计）、`inboundQty`（累计入库）、`costingSnapshot`（确认时点冻结）
-- `crab atelier order <orderId> --json` → 制单全量视图（含快照三表 + totals + sizes/sizeChart + progress + inboundQty + `logs` 报数流水〔`qtyDone` 服务端按矩阵派生 + `breakdown`〕 + `inbounds` 回货流水〔同上〕）
+- `crab atelier order <orderId> --json` → 制单全量视图（含快照三表 + totals + sizes/sizeChart + progress + inboundQty + `logs` 报数流水〔`qtyDone` 服务端按矩阵派生 + `breakdown`〕 + `inbounds` 回货流水〔同上〕 + `purchases` 采购台账 + `purchaseSummary` 物料对账〔`demandMilli` 应买/`purchasedMilli` 已买/`amountCents` 实付合计/`pendingCount` 待到笔数〕）
+- `crab atelier order purchase <orderId> --json` → `{ purchases, summary }`（台账 + 对账一次取）
 - `crab atelier records --json` → `{ records: [...], total, page, totalPages }`（type 含 inbound = 回货入库事件）
+- `crab atelier audits --json` → `{ events: [...], total, page, totalPages }`（事件含 `action`/`actorName`/`actorType`〔agent = 令牌动作〕/`meta`；仅 owner 令牌可查）
 - `crab atelier desk --json` → `{ org, stats: { totalStyles, activeStyles, doneStyles, samplingStyles, reviewPending, stageCounts, activeCollections, suppliersFabric, suppliersFactory }, reviewTodos, recentRecords }`
 - `crab atelier invite --json` → `{ token, createdAt, link }`
 - 时间字段一律纪元毫秒；金额字段 `*Cents` 一律整数分
