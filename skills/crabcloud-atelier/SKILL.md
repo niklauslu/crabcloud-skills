@@ -1,13 +1,13 @@
 ---
 name: crabcloud-atelier
-description: Fashion R&D workshop management via the `crab atelier` CLI — apply to create an atelier, manage members & permission sets, invite links, roles, collections, styles (with stage markers), design-stage documents (design/pattern/sample drafts with round-based reviews), the supplier directory (fabric vendors & factories), production orders (size breakdown, delivery, factory, frozen costing snapshot), the org-wide record stream and the desk digest. Use when the user asks anything about their fashion atelier on Crab Cloud: 工坊、款式、样衣、打样、审版、样衣轮次、系列、款号、配色、设计师、服装研发、核价准备、建坊、成员、权限、邀请链接、岗位、记录、工作台、供应商、面辅料、加工厂、制单、生产单、排产、交期、投产、工艺单 — even if they never say "crab".
+description: Fashion R&D workshop management via the `crab atelier` CLI — apply to create an atelier, manage members & permission sets, invite links, roles, collections, styles (with stage markers), design-stage documents (design/pattern/sample drafts with round-based reviews), the supplier directory (fabric vendors & factories), production orders (size breakdown, delivery, factory, frozen costing snapshot), the org-wide record stream and the desk digest. Use when the user asks anything about their fashion atelier: 工坊、款式、样衣、打样、审版、样衣轮次、系列、款号、配色、设计师、服装研发、核价准备、建坊、成员、权限、邀请链接、岗位、记录、工作台、供应商、面辅料、加工厂、制单、生产单、排产、交期、投产、工艺单 — even if they never say "crab".
 ---
 
-# Crab Cloud 服装研发工坊（crab atelier）
+# Atelier 服装研发工坊（crab atelier）
 
 管理服装研发工坊：成员与权限集、邀请链接、岗位（纯职务标识）、系列（批次容器）、
 款式库（款号 + 阶段定位标记 + 配色 + 打样稿件）、设计阶段时间线（稿件上传 /
-审版定版留痕）、供应商目录（面辅料商家 / 加工厂）、全量记录流与工作台聚合。独立产品「Atelier · Crab Cloud」，同一套 REST API 服务 Web 与 CLI。
+审版定版留痕）、供应商目录（面辅料商家 / 加工厂）、全量记录流与工作台聚合。独立产品 Atelier，同一套 REST API 服务 Web 与 CLI。
 款（style）是唯一锚点——建档、轮次、结论都挂在款上并自动落时间线。
 
 跨域时参考：邮件 `crabcloud-mail`、云盘 `crabcloud-storage`、协作
@@ -93,11 +93,11 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 归档 / 恢复 | `crab atelier collection archive <id>` / `crab atelier collection restore <id>`（幂等无删除） |
 | 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--page N]`（带阶段分布计数） |
 | 看一款 | `crab atelier style <id>`（信息按组展示：01 基础信息 / 02 商品规格 / 03 生产信息 / 04 尺寸表〔部位 × 尺码矩阵 + 档差，尺码列随商品规格联动〕，+ 轮次时间线 + 最近事件，一次取全） |
-| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ... --pattern-maker 纸样师 --sample-maker 版师] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
-| 编辑款式 | `crab atelier style edit <id> --stage 生产 [--pattern-maker 纸样师 --sample-maker 版师]`（给的 flag 才改；`--collection clear` 解绑系列；人员字段均选填自由文本） |
+| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ... --pattern-maker 纸样师 --sample-maker 车版师] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
+| 编辑款式 | `crab atelier style edit <id> --stage 生产 [--pattern-maker 纸样师 --sample-maker 车版师]`（给的 flag 才改；`--collection clear` 解绑系列；人员字段均选填自由文本） |
 | 设款式封面 | `crab atelier style cover <styleId> <本地图片路径>`（png/jpg/webp/gif ≤20MB；走工坊素材中转上传，素材自动进 owner 云盘「服装研发」分类，Web 产品库/详情画册位即显；`--clear` 移除引用素材不删）。封面引用只认工坊素材——云盘直传的通用文件挂不上 |
 | 登记规格 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝 --sizes S,M,L --craft-notes "领口包边，成衣水洗"`（各项各自整体替换——空数组/空串 = 清空；色板与尺码是商品需要的规格，特殊工艺是生产需要的，Web 详情页即按此分组） |
-| 登记尺寸表 | `crab atelier style edit <id> --size-chart "衣长:2:S=66,M=68,L=70|胸围::S=100"`（**整体替换**，`clear` = 清空；行间 `\|`，行内 `部位:档差:码=值,码=值`——档差可省略或显式留空〔`部位::` = 无档差〕，值 0–1000 留空 = 该格不记；尺码列与商品规格联动，先配 `--sizes` 再录尺寸表；Web 信息 tab 04 组同源。部位枚举（KHARITES 纸单）：后中长/肩宽/胸围/腰围/臀围/脚围/袖长/袖肥/袖口围/夹圈/裤长·裙长/脾围/膝围/前浪/后浪/肩带长——Web 下拉选择 + 其他自填，CLI 自由文本均可） |
+| 登记尺寸表 | `crab atelier style edit <id> --size-chart "衣长:沿肩缝直量:2:S=66,M=68,L=70|胸围::S=100"`（**整体替换**，`clear` = 清空；行间 `\|`，行内 `部位:测量方式:档差:码=值,码=值`——测量方式段可整体省略，档差可省略或显式留空〔`部位::` = 无档差〕，值 0–1000 留空 = 该格不记；尺码列与商品规格联动，先配 `--sizes` 再录尺寸表；Web 信息 tab 04 组同源。部位枚举（KHARITES 纸单）：后中长/肩宽/胸围/腰围/臀围/脚围/袖长/袖肥/袖口围/夹圈/裤长·裙长/脾围/膝围/前浪/后浪/肩带长——Web 下拉选择 + 其他自填，CLI 自由文本均可） |
 
 ## 供应商目录
 
@@ -128,8 +128,8 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 
 | 意图 | 命令 |
 |---|---|
-| 看核算单 | `crab atelier costing <styleId>`（面辅料/工艺/其他成本行 + 单件合计 + 工艺说明；面辅料行带成份/门幅/克重/颜色与制版单耗/损耗/备注等属性行；rowId 都在这里取。A4 打印单在 Web 款式详情「核算」tab） |
-| 加面辅料行 | `crab atelier material add <styleId> --name "澳毛纱" --category fabric --supplier <id\|前缀\|名称> --ref-price-cents 4800 --qty 0.4 --unit 公斤 [--article-no 货号 --spec 规格 --purpose 主面料 --composition "65%锦35%棉" --width 135 --gsm 70 --loss-pct 15 --pattern-usage 0.27 --colors 黑,橘 --supply-mode 现货\|订纺 --parts 所用部位 --shrinkage "经3%纬3%" --interlining-thickness 30g --note 备注]`（--qty/--pattern-usage 小数；**--width 单位 cm、--loss-pct 单位 %**；金额一律 --*-cents 整数分；供应商引用 id/前缀/名称，clear = 解绑） |
+| 看核算单 | `crab atelier costing <styleId>`（面辅料/工艺/其他成本行 + 单件合计 + 工艺说明；面辅料行带成份/门幅/克重/颜色/部位/缩率/烫朴/制版单耗/损耗/提供方式/备注等属性行；rowId 都在这里取。A4 打印单在 Web 款式详情「核算」tab） |
+| 加面辅料行 | `crab atelier material add <styleId> --name "澳毛纱" --category fabric --supplier <id\|前缀\|名称> --ref-price-cents 4800 --qty 0.4 --unit 公斤 [--article-no 货号 --spec 规格 --purpose 主面料 --composition "65%锦35%棉" --width 135 --gsm 70 --loss-pct 15 --pattern-usage 0.27 --colors 黑,橘 --supply-mode 现货\|订纺 --parts 所用部位 --shrinkage "经3%纬3%" --interlining-thickness 30g --note 备注 --image 本地图片路径]…`（--qty/--pattern-usage 小数；**--width 单位 cm、--loss-pct 单位 %**；金额一律 --*-cents 整数分；供应商引用 id/前缀/名称，clear = 解绑；--image 小样图可重复 ≤3 张，material edit 另支持 `--image clear` 清空） |
 | 加工艺行 | `crab atelier process add <styleId> --name "打鸡眼" --qty 100 --price-cents 100 [--requirement 要求 --supplier ... --unit 次]`（金额自动计入成本核算） |
 | 加其他成本 | `crab atelier extra add <styleId> --name "包装" --price-cents 3000 [--qty 1 --unit ...]`（包装/运费/损耗） |
 | 改/删核算行 | `crab atelier material\|process\|extra edit <rowId> [同 add 的 flag，给的才改]` / `… rm <rowId>`（合计随单自动重算；行编辑与 A4 打印单也可在 Web 核算 tab） |
