@@ -1,6 +1,6 @@
 ---
 name: crabcloud-atelier
-description: Fashion R&D workshop management via the `crab atelier` CLI — apply to create an atelier, manage members & permission sets, invite links, roles, collections, styles (with stage markers), design-stage documents (design/pattern/sample drafts with round-based reviews), the supplier directory (fabric vendors & factories), production orders (size breakdown, delivery, factory, frozen costing snapshot), the org-wide record stream and the desk digest. Use when the user asks anything about their fashion atelier: 工坊、款式、样衣、打样、审版、样衣轮次、系列、款号、配色、设计师、服装研发、核价准备、建坊、成员、权限、邀请链接、岗位、记录、工作台、供应商、面辅料、加工厂、制单、生产单、排产、交期、投产、工艺单 — even if they never say "crab".
+description: Fashion R&D workshop management via the `crab atelier` CLI — apply to create an atelier, manage members & permission sets, invite links, roles, collections, styles (with stage markers and archive/restore), the category dictionary for style creation, design-stage documents (design/pattern/sample drafts with round-based reviews), the supplier directory (fabric vendors & factories), production orders (size breakdown, delivery, factory, frozen costing snapshot), the org-wide record stream and the desk digest. Use when the user asks anything about their fashion atelier: 工坊、款式、样衣、打样、审版、样衣轮次、系列、款号、配色、设计师、服装研发、核价准备、建坊、成员、权限、邀请链接、岗位、记录、工作台、供应商、面辅料、加工厂、品类、归档、制单、生产单、排产、交期、投产、工艺单 — even if they never say "crab".
 ---
 
 # Atelier 服装研发工坊（crab atelier）
@@ -44,7 +44,9 @@ atelier 命令需要 **atelier scope + 工坊绑定**的令牌：`crab login --s
 
 | 意图 | 命令 |
 |---|---|
-| 看我在哪些工坊 | `crab atelier orgs` |
+| 看我在哪些工坊 | `crab atelier orgs`（当前绑定的带 `← 当前` 标记） |
+| 看当前工坊 | `crab atelier org`（令牌绑定的工坊与 scope；绑定是服务端状态） |
+| 切换工坊 | `crab atelier org switch <org:名称\|id>`（浏览器授权一次即换绑，原令牌不撤销；多工坊轮换用） |
 | 申请创建工坊 | `crab atelier org apply <名称> [--note 说明]`（审核通过自动建坊） |
 | 查申请进度 | `crab atelier org application`（pending / approved〔含驳回意见〕/ 从未申请） |
 | 工坊改名 | `crab atelier org rename <新名称>`（settings 权限；改名后 `org:<名称>` 标识随新名） |
@@ -81,6 +83,10 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 
 **系列批次**（批次容器）：标题 + 年月（`YYYY-MM` 必填）+ 选填说明 + 归档状态——
 归档不是删除，可随时恢复；归档后新建款式不可再挂该系列，存量款式引用不受影响。
+**款式归档**同理（2026-10-14）：归档款从默认列表退场（`styles --status archived|all`
+带出），记录与引用全部保留、可恢复、无删除。**品类是辅助输入不是关联**（2026-10-14
+拍板）：品类字典只供建档时选词与记录页管理，款式上的品类仍是自由文本、不挂 id——
+`--category` 直接写文本即可，想进字典供团队复选再 `category create`。
 款式阶段是**定位标记不是状态机**（设计 → 核算 → 生产 → 完成；打样与审版收在
 设计段内）——任意阶段可编辑、可补录，阶段变更自动落时间线。金额一律**整数分**
 （`--retail-cents 19900` = ¥199.00）。款号 = 工坊内唯一业务主键（重复建档 409）。
@@ -91,9 +97,14 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 建系列 | `crab atelier collection create "2026 秋冬首批" --ym 2026-09 [--note 备注]`（年月必填） |
 | 改系列 | `crab atelier collection edit <id> [--name ... --ym 2026-10 --note ...]`（给的 flag 才改） |
 | 归档 / 恢复 | `crab atelier collection archive <id>` / `crab atelier collection restore <id>`（幂等无删除） |
-| 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--page N]`（带阶段分布计数） |
+| 看品类 | `crab atelier categories [--status active\|archived\|all] [--q 关键字]`（默认只看在册；带状态计数） |
+| 建品类 | `crab atelier category create "连衣裙"`（同 org 重名 409；归档同名同样占用，恢复即可） |
+| 改品类 | `crab atelier category edit <id> --name 新名称`（撞名 409） |
+| 归档 / 恢复品类 | `crab atelier category archive <id>` / `crab atelier category restore <id>`（归档后建档选择器不再出，已录款式文本不受影响） |
+| 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--status active\|archived\|all] [--page N]`（默认只看在库；带阶段与状态计数） |
 | 看一款 | `crab atelier style <id>`（信息按组展示：01 基础信息 / 02 商品规格 / 03 生产信息 / 04 尺寸表〔部位 × 尺码矩阵 + 档差，尺码列随商品规格联动〕，+ 轮次时间线 + 最近事件，一次取全） |
 | 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ... --pattern-maker 纸样师 --sample-maker 车版师] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
+| 归档款式 | `crab atelier style archive <styleId>` / `crab atelier style restore <styleId>`（幂等无删除；归档款详情仍可看，时间线落归档句） |
 | 编辑款式 | `crab atelier style edit <id> --stage 生产 [--pattern-maker 纸样师 --sample-maker 车版师]`（给的 flag 才改；`--collection clear` 解绑系列；人员字段均选填自由文本） |
 | 设款式封面 | `crab atelier style cover <styleId> <本地图片路径>`（png/jpg/webp/gif ≤20MB；走工坊素材中转上传，素材自动进 owner 云盘「服装研发」分类，Web 产品库/详情画册位即显；`--clear` 移除引用素材不删）。封面引用只认工坊素材——云盘直传的通用文件挂不上 |
 | 登记规格 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝 --sizes S,M,L --craft-notes "领口包边，成衣水洗"`（各项各自整体替换——空数组/空串 = 清空；色板与尺码是商品需要的规格，特殊工艺是生产需要的，Web 详情页即按此分组） |
