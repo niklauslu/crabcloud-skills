@@ -106,6 +106,7 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ... --pattern-maker 纸样师 --sample-maker 车版师] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
 | 归档款式 | `crab atelier style archive <styleId>` / `crab atelier style restore <styleId>`（幂等无删除；归档款详情仍可看，时间线落归档句） |
 | 编辑款式 | `crab atelier style edit <id> --stage 生产 [--pattern-maker 纸样师 --sample-maker 车版师]`（给的 flag 才改；`--collection clear` 解绑系列；人员字段均选填自由文本） |
+| 关联加工厂 | `crab atelier style create/edit <...> --factory <加工厂id\|名称>`（值引用供应商目录 type='factory'；`--factory clear` 解绑；面辅料型供应商会被拒；详情 03 生产信息与制单建单默认带出） |
 | 设款式封面 | `crab atelier style cover <styleId> <本地图片路径>`（png/jpg/webp/gif ≤20MB；走工坊素材中转上传，素材自动进 owner 云盘「服装研发」分类，Web 产品库/详情画册位即显；`--clear` 移除引用素材不删）。封面引用只认工坊素材——云盘直传的通用文件挂不上 |
 | 登记规格 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝 --sizes S,M,L --craft-notes "领口包边，成衣水洗"`（各项各自整体替换——空数组/空串 = 清空；色板与尺码是商品需要的规格，特殊工艺是生产需要的，Web 详情页即按此分组） |
 | 登记尺寸表 | `crab atelier style edit <id> --size-chart "衣长:沿肩缝直量:2:S=66,M=68,L=70|胸围::S=100"`（**整体替换**，`clear` = 清空；行间 `\|`，行内 `部位:测量方式:档差:码=值,码=值`——测量方式段可整体省略，档差可省略或显式留空〔`部位::` = 无档差〕，值 0–1000 留空 = 该格不记；尺码列与商品规格联动，先配 `--sizes` 再录尺寸表；Web 信息 tab 04 组同源。部位枚举（KHARITES 纸单）：后中长/肩宽/胸围/腰围/臀围/脚围/袖长/袖肥/袖口围/夹圈/裤长·裙长/脾围/膝围/前浪/后浪/肩带长——Web 下拉选择 + 其他自填，CLI 自由文本均可） |
