@@ -152,8 +152,8 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 ## 制单与生产（写闸 production）
 
 **制单 = 三态生命周期的投产通知单**（2026-10-09 定稿）：**未确认（草稿，可
-编辑）→ 确认（定稿：快照冻结、可打印工艺单）→ 作废（单向终态：不可打印、
-留档）**。只有已确认单据出 A4 工艺单（读确认时点快照、**不含任何金额**，
+编辑）→ 确认（定稿：可打印工艺单）→ 作废（单向终态：不可打印、
+留档）**。只有已确认单据出 A4 工艺单（**不含任何金额**，
 留档 + 给工厂）。标题默认「款式名 + 日期」可改。规格明细 = 「色板 × 尺码」
 矩阵：尺寸必有（款式未录尺码 400，先补商品规格）；色板可有可无（单色款不
 填色）。加工厂只收 factory 类型供应商（留空 = 自加工）；交期 = 预计交期。
@@ -170,9 +170,9 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 代报时见到 ⚠ 先向用户复述确认再继续。Web 操作位置见 `references/web-ui.md`。
 **采购记录（2026-10-12 切片）**：细化 planning「一期不做独立采购单」——逐条
 台账挂已确认制单，**物料必须关联核算面辅料行**（`--material` = 核算行 id，须
-在该单确认时点快照清单内；名称/货号/规格/单位由服务端从快照带出，不自由填）。
+在本款核算清单内（随核算现行，含确认后新增的行）；名称/货号/规格/单位由服务端带出，不自由填）。
 `--amount-cents` = 实付金额整数分（非单价×数量派生）；到货两态单向（待到货 →
-已到货）。对账口径：用量 = 快照单件耗料 × 件数，差数即余缺（用量/已买/实付为 0 时输出省略该段，与 Web 0 值空白同口径）。删除是金额录错
+已到货）。对账口径：用量 = 单件耗料 × 件数（物料随核算现行），差数即余缺（用量/已买/实付为 0 时输出省略该段，与 Web 0 值空白同口径）。删除是金额录错
 兜底（时间线留痕不撤）；Web 的「生产」tab = 采购/报数/入库合流（选单 + 工单头
   速览 + 三板块上下平铺：01 采购 / 02 报数 / 03 入库）。
 
@@ -182,12 +182,12 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 | 看一单 | `crab atelier order <orderId>`（标题 + 规格明细 + 工序报数累计 + 入库对账 + **采购对账与流水** + **报数/回货流水〔含色码矩阵〕** + 快照合计；orderId 见 orders） |
 | 建草稿 | `crab atelier order add <styleId> --breakdown "黑色:S=30,M=45\|米白:S=20" [--title 标题 --supplier <id\|前缀\|名称> --delivery 2026-10-20 --notes 备注]`（--breakdown 色码=件数：多色 `\|` 分段、`色:` 前缀；单色款直接 `"S=10,M=20"`） |
 | 改草稿 | `crab atelier order edit <orderId> [--title ... --breakdown "..." --supplier ... --delivery ... --notes ...]`（仅未确认可编辑） |
-| 确认定稿 | `crab atelier order confirm <orderId>`（快照冻结、可打印；定稿后不可再改） |
+| 确认定稿 | `crab atelier order confirm <orderId>`（可打印；定稿后不可再改） |
 | 作废 | `crab atelier order void <orderId>`（单向终态：不可打印、留档） |
 | 报数 | `crab atelier order log <orderId> --step 裁剪 --breakdown "S=10,M=20" [--defect 2 --note 备注]`（--step 须在单据工序列表内〔order 详情可看〕；--breakdown 按单据规格逐格报、总数服务端按格求和；次品 ≤ 总数） |
 | 登记回货 | `crab atelier order inbound <orderId> --breakdown "S=10,M=20" [--note 备注]`（本批按单据规格逐格填；分批多次；差数 = 未交尾数） |
 | 看采购台账 | `crab atelier order purchase <orderId>`（物料对账段：用量/已买/余缺/实付合计 + 采购流水） |
-| 记采购 | `crab atelier order purchase add <orderId> --material <costMaterialId> --qty 2.5 --amount-cents N [--supplier <id\|前缀\|名称> --note 备注]`（仅已确认单；--material 须在该单快照内〔order 详情可看快照物料〕；实付金额整数分） |
+| 记采购 | `crab atelier order purchase add <orderId> --material <costMaterialId> --qty 2.5 --amount-cents N [--supplier <id\|前缀\|名称> --note 备注]`（仅已确认单；--material 须在本款核算清单内〔order 详情可看物料〕；实付金额整数分） |
 | 标记到货 | `crab atelier order purchase recv <purchaseId>`（待到货 → 已到货，单向不可逆） |
 | 删采购 | `crab atelier order purchase rm <purchaseId>`（金额录错兜底；时间线留痕不撤） |
 
@@ -200,7 +200,7 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 - `crab atelier suppliers --json` → `{ suppliers: [...], total, page, totalPages, statusCounts, typeCounts }`
 - `crab atelier costing <styleId> --json` → `{ styleId, craftNotes, materials, processes, extras, totals: { materialsCents, processCents, extrasCents, totalCents } }`（行金额服务端算好；数量为毫单位 ×1000）
 - `crab atelier orders <styleId> --json` → `{ orders: [...], total, page, totalPages, statusCounts: { draft, confirmed, voided } }`；订单含 `title`、`orderNo`（款号-seq）、`breakdown`（色板→尺码→件数两级矩阵）、`steps`（工序列表）、`progress`（各工序报数累计）、`inboundQty`（累计入库）、`costingSnapshot`（确认时点冻结）
-- `crab atelier order <orderId> --json` → 制单全量视图（含快照三表 + totals + sizes/sizeChart + progress + inboundQty + `logs` 报数流水〔`qtyDone` 服务端按矩阵派生 + `breakdown`〕 + `inbounds` 回货流水〔同上〕 + `purchases` 采购台账 + `purchaseSummary` 物料对账〔`demandMilli` 用量/`purchasedMilli` 已买/`amountCents` 实付合计/`pendingCount` 待到笔数〕）
+- `crab atelier order <orderId> --json` → 制单全量视图（含成本三表〔物料随核算现行〕+ totals + sizes/sizeChart + progress + inboundQty + `logs` 报数流水〔`qtyDone` 服务端按矩阵派生 + `breakdown`〕 + `inbounds` 回货流水〔同上〕 + `purchases` 采购台账 + `purchaseSummary` 物料对账〔`demandMilli` 用量/`purchasedMilli` 已买/`amountCents` 实付合计/`pendingCount` 待到笔数〕）
 - `crab atelier order purchase <orderId> --json` → `{ purchases, summary }`（台账 + 对账一次取）
 - `crab atelier records --json` → `{ records: [...], total, page, totalPages }`（type 含 inbound = 回货入库事件）
 - `crab atelier audits --json` → `{ events: [...], total, page, totalPages }`（事件含 `action`/`actorName`/`actorType`〔agent = 令牌动作〕/`meta`；仅 owner 令牌可查）
