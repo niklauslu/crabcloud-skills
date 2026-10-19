@@ -6,9 +6,11 @@ description: Organization knowledge base (LLM wiki) via the `crab wiki` CLI — 
 # Wiki 知识库（crab wiki）
 
 组织内部资料的典藏馆：**索引进正文，分册按需读**。目录与文档都是节点，每个
-节点必有一行摘要——摘要就是父目录索引里的一行。全库默认私有，文件按人授权
-（可读 / 可写两档；目录授权对整棵子树生效）。这是 Karpathy llm-wiki 模式的
-组织级实现：**你是维护者**——摄取、回链、体检都是你的活，维护负担由你承担。
+节点必有一行摘要——摘要就是父目录索引里的一行。成员可见全库词条（标题/摘要
+在树与索引里都读得到），内容按人授权（可读 / 可写两档；目录授权对整棵子树
+生效；🔒 需授权的词条读不了正文，Web 端可向 Owner 申请）。这是 Karpathy
+llm-wiki 模式的组织级实现：**你是维护者**——摄取、回链、体检都是你的活，
+维护负担由你承担。
 
 跨域时参考：邮件 `crabcloud-mail`、云盘 `crabcloud-storage`、协作
 `crabcloud-collab`、店铺 `crabcloud-shop`、人事行政 `crabcloud-hr`、平台账号
@@ -23,8 +25,11 @@ description: Organization knowledge base (LLM wiki) via the `crab wiki` CLI — 
 
 **ingest（摄）**：把一份材料整理入库——读原文 → 和用户确认要点 → 找挂载
 目录（没有合适的先建目录）→ `crab wiki add` 写入 → `crab wiki link` 回写
-相关页 → `crab wiki lint` 收尾。一次摄入一个源，保持参与。实战细节（多文件、
-去重、frontmatter）按 **`references/ingest-playbook.md`** 指路（同目录分册）。
+相关页 → `crab wiki lint` 收尾。不知道有什么活儿先看收件箱：
+`crab wiki inbox`——所有上传的原始文件（PDF/图片）自动入箱等整理，下载、
+清洗、`wiki add --attach` 写回后引用即自动完结。一次摄入一个源，保持参与。
+实战细节（收件箱流、多文件、去重、frontmatter）按
+**`references/ingest-playbook.md`** 指路（同目录分册）。
 
 **lint（体检）**：改动后 `crab wiki lint`——空摘要、空目录、悬挂互链、跨层
 重名、stale 候选；矛盾与过时断言这类语义体检按用户要求做。
@@ -38,19 +43,20 @@ description: Organization knowledge base (LLM wiki) via the `crab wiki` CLI — 
 - `crab whoami` 报「未登录」或退出码 3 → 引导用户 `crab login`。wiki 命令
   还要求令牌绑定知识库：`crab login --scopes wiki --org org:<名称>`（授权页
   批准后生效；`crab wiki orgs` 看绑定与列表）。
-- 退出码：0 成功 · 2 用法错误 · 3 认证失效 · 4 scope/绑定不足 · 5 资源不存在。
+- 退出码：0 成功 · 1 其他 API 错误（如 🔒 需授权）· 2 用法错误 · 3 认证失效 · 4 scope/绑定不足 · 5 资源不存在。
 
 ## 命令表
 
 | 意图 | 命令 |
 | --- | --- |
 | 我的库 | `crab wiki orgs` |
-| 看结构 | `crab wiki tree`（穿越容器标「部分可见」；✎可写 👁可读） |
+| 换绑/建库 | `crab wiki org [show]` / `org switch <org:名称\|库id>` / `org apply <名称>` / `org application` / `org rename <新名称>` |
+| 看结构 | `crab wiki tree`（✎可写 👁可读 🔒需授权——锁定词条标题/摘要在列、正文闸） |
 | 看一层 | `crab wiki ls <id\|路径>` |
 | 读 | `crab wiki read <id\|路径>`（目录出索引 markdown，文档出正文） |
 | 建目录 | `crab wiki add-dir --parent <id\|路径> --title <标题> --summary <一行摘要> [--description 前言]` |
-| 建文档 | `crab wiki add --parent <id\|路径> --title <标题> --summary <一行摘要> [--content-file <md\|-]` |
-| 改 | `crab wiki edit <id\|路径> [--title] [--summary] [--content-file <md\|-]` |
+| 建文档 | `crab wiki add --parent <id\|路径> --title <标题> --summary <一行摘要> [--content-file <md\|-] [--attach <fileId,...>]`（--attach 挂原始文件，引用即收件箱自动完结） |
+| 改 | `crab wiki edit <id\|路径> [--title] [--summary] [--content-file <md\|-] [--attach <fileId,...>]`（--attach 增量追加） |
 | 移动 | `crab wiki mv <id\|路径> --parent <id\|路径\|root> [--before <同级id>]` |
 | 互链 | `crab wiki link <id\|路径> --to <id\|路径> [--unlink]` |
 | 授权 | `crab wiki grant <id\|路径> --to <用户名> [--write]` |
@@ -58,7 +64,10 @@ description: Organization knowledge base (LLM wiki) via the `crab wiki` CLI — 
 | 权限 | `crab wiki acl <id\|路径>`（我的档位与来源 + 直授名单） |
 | 体检 | `crab wiki lint` |
 | 时间线 | `crab wiki log [--limit N]`（owner 专属） |
-| 传图 | `crab wiki upload <文件>`（返回正文引用片段） |
+| 传图 | `crab wiki upload <文件>`（返回正文引用片段；自动入收件箱） |
+| 收件箱 | `crab wiki inbox [--status <pending\|processed\|skipped\|all>]`（待整理的原始文件队列，缺省只列未处理） |
+| 取料 | `crab wiki inbox get <fileId> [-o 路径]`（下载原始文件到本地清洗） |
+| 兜底标记 | `crab wiki inbox done <fileId> [--node <id\|路径>] [--note]` / `inbox skip <fileId> [--note]`（引用即自动完结，一般不用） |
 | 导出 | `crab wiki export [--out 目录]`（每层 INDEX.md + AGENTS.md，可直接挂给 agent） |
 | 导入 | `crab wiki import <本地md目录> [--parent <id|路径>] [--dry-run]` |
 
@@ -81,6 +90,7 @@ stdout，不要解析人类可读格式；`tree`/`log` 的文本款仅供人看�
    目录即分类。
 5. **ingest 后回链**——新文档与既有相关页面互 `link`，保持知识网连通。
 6. **权限不绕过**——你以绑定成员的身份行事，成员看不到的你也不该看；
-   需要访问就引导用户找 Owner 开授权（`crab wiki grant`）。
+   树里 🔒 的词条读得了标题/摘要、读不了正文（CLI 会给出提示），需要就
+   请 Owner `crab wiki grant`，或引导用户在 Web 端文档页申请授权。
 7. **写前复述**——创建/编辑前向用户复述：标题、摘要、挂载目录；批量导入
    先 `--dry-run` 给用户过目。

@@ -51,8 +51,10 @@ Crab Cloud 是用户的个人云底座：账号、订阅与积分是平台层，
 
 积分命令需 `credits.read` scope（`account` 组含它）：退出码 4 报缺该 scope 时，
 引导 `crab login --scopes account` 重新授权。积分额度一律以**积分数**表述
-（**1 积分 = $1**，仅价格类口径用美元）；充值/下单是 Web 会话能力，CLI/Agent
-令牌不动账——用户要充值时引导网页账单页（crabcloud.cc/account/billing）。
+（积分是独立价值单位，美元/人民币只是定价参照，不做换算展示）；充值/下单是
+Web 会话能力，CLI/Agent 令牌不动账——用户要充值时引导网页账单页
+（crabcloud.cc/account/billing），已有账单要支付时给支付链接
+（crabcloud.cc/pay/bill/<账单id>，登录后打开即收银）。
 拿不准令牌 id 时先 `crab tokens list` 核对；`revoke` 只接受列表里的 id。
 
 ## 机器可读输出

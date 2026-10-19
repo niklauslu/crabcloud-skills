@@ -1,0 +1,109 @@
+---
+name: crabcloud-short
+description: Short-drama studio via the `crab short` CLI — create series, episodes (with editable scripts), a subject library (characters/scenes/props with appearance prompts and generated-image references), and two-level storyboards (scenes → shots with shot size, camera move, dialogue, duration, image/video prompts, subject links). Built as an AI production workbench: agents read the series bible and write scripts/storyboards back. Use when the user asks anything about their short-drama studio: 短剧、剧目、剧集、分集、剧本、分镜、场、镜头、景别、运镜、主体库、角色、场景、道具、生图、prompt、美术风格、发布、制作状态、工作台 — even if they never say "crab".
+---
+
+# Short 短剧工作室（crab short）
+
+短剧团队的制作工作台：**剧（series）→ 集（episode）** 是唯一主轴。剧挂基础
+档案（对外展示）+ 制作信息（背景设定/总体大纲/美术风格指导，内部）；集挂
+剧本（可反复改的可编辑文档，无版本表）与分镜；**主体库（角色/场景/道具）挂
+剧、跨集复用**；分镜两级——场（sequence）→ 镜头（shot：画面/动作/台词 +
+景别/运镜 + 时长 + 图视频 prompt + 主体关联）。独立产品 Short，同一套 REST
+API 服务 Web 与 CLI。
+
+跨域时参考：云盘 `crabcloud-storage`（成片/素材同库）、邮件 `crabcloud-mail`、
+协作 `crabcloud-collab`、店铺 `crabcloud-shop`、平台账号 `crabcloud`。
+
+## AI 制作约定（生图/生视频输入怎么拼）
+
+生成图像时按此顺序拼接 prompt，保证全剧视觉一致：
+
+1. **剧级美术风格指导**（`short series show <id>` 的 `styleGuide`）；
+2. **主体外观提示词**（`short subjects <seriesId>` 里关联主体的 `appearancePrompt`）；
+3. **镜头生图 prompt**（shot 的 `imagePrompt`）。
+
+生成结果用 `--image <素材对象id>` 挂回主体或镜头留痕（素材在云盘「短剧制作」
+分类一本账；上传走 crab storage upload 拿对象 id）。生视频同理
+（`videoPrompt` / 镜头结果）。
+
+## 第一步：确认可用
+
+- 运行 `crab --version` 确认已安装。`crab` 命令缺失时先 `npx @crabcloud/cli init`
+  （只登录 + 装 skill、不含命令本体）；已装但缺 `short` 命令用
+  `npx @crabcloud/cli@latest init` 升级。不想装全局则整段跳过，下文所有
+  `crab <命令>` 直接 `npx @crabcloud/cli <命令>` 等价执行。
+- `crab whoami` 报「未登录」或退出码 3 → 引导用户 `crab login`。**实际授予集
+  由人定**——登录后先 `crab whoami` 核对 scopes。
+- 永远不要让用户把 token 粘贴进对话；凭证文件与你无关，也不要读取它。
+
+short 命令需要 **short scope** 的令牌：`crab login --scopes short`（绑定工作
+室加 `--org org:<名称>`；未绑定也能用——组织级命令用 `--org org:<名称>|id`
+指定，只在一个工作室时自动采用）。
+
+退出码：0 成功 · 2 用法错误 · 3 认证失效 · 4 scope 不足 · 5 不存在 · 7 配额。
+
+## 剧与分集
+
+| 意图 | 命令 |
+|---|---|
+| 看工作室概览 | `crab short stats`（剧目/分集计数） |
+| 建剧 | `crab short series create "剧名" --genre 都市 --logline "一句话" --audience 女频 --episodes 60` |
+| 剧目列表 | `crab short series [--status draft\|published\|archived\|all]` |
+| 剧详情 | `crab short series show <id>`（基础档案 + 制作信息 + 集数进度） |
+| 编辑剧 | `crab short series edit <id> [--logline … --outline … --style … --status …]`（给的 flag 才改） |
+| 填制作信息 | `--background`（世界观背景）`--outline`（总体大纲）`--style`（美术风格指导）——内部文档，不进对外档案 |
+| 分集列表 | `crab short episodes <seriesId>` |
+| 新建分集 | `crab short episode create <seriesId> --title "第1集"`（seq 自动顺延） |
+| 写剧本 | `crab short episode edit <id> --script "…"`（整体替换；修改是常事，直接覆盖） |
+| 推制作状态 | `--prod-status outline\|scripting\|prep\|shooting\|post\|ready` |
+| 发布 | `--published on`（要求 prod-status 先到 ready，否则 409 not_ready） |
+| 删集 | `crab short episode rm <id>`（分镜一并删除，不可恢复） |
+
+剧状态：`draft → published → archived`。归档不是删除——archived 剧的内容
+只读（写操作 409 series_archived），唯一出口是 `series edit <id> --status
+draft|published` 改回来。
+
+## 主体库（挂剧，跨集复用）
+
+| 意图 | 命令 |
+|---|---|
+| 列主体 | `crab short subjects <seriesId> [--kind character\|scene\|prop]` |
+| 建角色/场景/道具 | `crab short subject create <seriesId> "名字" --kind character --prompt "外貌/服装/气质"` |
+| 补声音设定 | `--voice "低沉沙哑"`（角色用） |
+| 编辑 | `crab short subject edit <id> [--prompt … --voice …\|clear --image <素材id>\|clear]` |
+| 挂生成图 | 先 `crab storage upload 图片` 拿对象 id → `subject edit <id> --image <对象id>` |
+| 删主体 | `crab short subject rm <id>` |
+
+同剧同类型重名 409 name_taken。`--prompt` 是生图输入的核心——写具体
+（画风/外貌/服装/气质），生成时与剧的 styleGuide 拼接。
+
+## 分镜（场 → 镜头，挂集）
+
+| 意图 | 命令 |
+|---|---|
+| 看整树 | `crab short board <episodeId>`（场→镜头一次取全，写分镜前的必读物） |
+| 添加场 | `crab short sequence create <episodeId> --title "天台·夜"`（场号自动顺延） |
+| 改场 | `crab short sequence edit <id> --title "…"` |
+| 添加镜头 | `crab short shot create <sequenceId> --desc "画面" --size 特写 --move 固定 --duration 8 --dialogue "…" --subjects su_x,su_y` |
+| 镜头 prompt | `--image-prompt`（生图）/ `--video-prompt`（生视频）；镜号自动顺延 |
+| 编辑镜头 | `crab short shot edit <id> [同 create 的 flags]`（给的 flag 才改；--subjects 整组替换，clear 全摘） |
+| 删场/删镜 | `crab short sequence rm <id>`（含场内镜头）/ `crab short shot rm <id>` |
+
+镜头字段：`--desc` 画面描述、`--action` 动作/表演、`--dialogue` 台词、
+`--size` 景别（远景/全景/中景/近景/特写…自由文本）、`--move` 运镜（固定/推/
+拉/摇/移/跟…）、`--duration` 预估秒数、`--subjects` 关联主体 id（服务端校验
+同剧归属，非本剧主体 400 invalid_subject）。
+
+## 典型工作流（从零到一部剧）
+
+```
+crab short series create "剧名" --logline "…" --style "赛博朋克霓虹夜景，高对比"
+crab short subject create <id> "林晚" --kind character --prompt "25岁女性，黑色皮衣，冷白皮"
+crab short episode create <id> --title "第1集"
+crab short episode edit <epId> --script "第一场…" --prod-status scripting
+crab short sequence create <epId> --title "天台·夜"
+crab short shot create <seqId> --desc "林晚回望城市" --size 中景 --move 推 --duration 6 \
+  --subjects su_x --image-prompt "林晚立于天台边缘回望，霓虹倒影"
+# 生成图后：crab storage upload 生成图 → crab short shot edit <shotId>（web 挂接亦可）
+```
