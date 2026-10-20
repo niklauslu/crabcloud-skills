@@ -188,9 +188,10 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 | 作废 | `crab atelier order void <orderId>`（单向终态：不可打印、留档） |
 | 报数 | `crab atelier order log <orderId> --step 裁剪 --breakdown "S=10,M=20" [--defect 2 --note 备注]`（--step 须在单据工序列表内〔order 详情可看〕；--breakdown 按单据规格逐格报、总数服务端按格求和；次品 ≤ 总数） |
 | 登记回货 | `crab atelier order inbound <orderId> --breakdown "S=10,M=20" [--note 备注]`（本批按单据规格逐格填；分批多次；差数 = 未交尾数） |
-| 看采购台账 | `crab atelier order purchase <orderId>`（物料对账段：用量/已买/余缺/实付合计 + 采购流水） |
-| 记采购 | `crab atelier order purchase add <orderId> --material <costMaterialId> --qty 2.5 --amount-cents N [--supplier <id\|前缀\|名称> --note 备注]`（仅已确认单；--material 须在本款核算清单内〔order 详情可看物料〕；实付金额整数分） |
-| 标记到货 | `crab atelier order purchase recv <purchaseId>`（待到货 → 已到货，单向不可逆） |
+| 看采购台账 | `crab atelier order purchase <orderId>`（物料对账段：用量/已买/已出/结存〔已买−已出〕/缺口/实付合计 + 采购流水；出库行标 [出库·即时生效]） |
+| 记采购（入库） | `crab atelier order purchase add <orderId> --material <costMaterialId> --qty 2.5 --amount-cents N [--supplier <id\|前缀\|名称> --note 备注]`（仅已确认单；--material 须在本款核算清单内〔order 详情可看物料〕；实付金额整数分） |
+| 出库（发料） | `crab atelier order purchase add <orderId> --material <costMaterialId> --qty 2.5 --direction out [--note 备注]`（按单发料：无供应商无金额、即时生效；结存 = 已买 − 已出，超发只警示不拦） |
+| 标记到货 | `crab atelier order purchase recv <purchaseId>`（待到货 → 已到货，单向不可逆；仅入库行） |
 | 删采购 | `crab atelier order purchase rm <purchaseId>`（金额录错兜底；时间线留痕不撤） |
 
 ## 机器可读输出（--json）
@@ -202,7 +203,7 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 - `crab atelier suppliers --json` → `{ suppliers: [...], total, page, totalPages, statusCounts, typeCounts }`
 - `crab atelier costing <styleId> --json` → `{ styleId, craftNotes, materials, processes, extras, totals: { materialsCents, processCents, extrasCents, totalCents } }`（行金额服务端算好；数量为毫单位 ×1000）
 - `crab atelier orders <styleId> --json` → `{ orders: [...], total, page, totalPages, statusCounts: { draft, confirmed, voided } }`；订单含 `title`、`orderNo`（款号-seq）、`breakdown`（色板→尺码→件数两级矩阵）、`steps`（工序列表）、`progress`（各工序报数累计）、`inboundQty`（累计入库）、`costingSnapshot`（确认时点冻结）
-- `crab atelier order <orderId> --json` → 制单全量视图（含成本三表〔物料随核算现行〕+ totals + sizes/sizeChart + progress + inboundQty + `logs` 报数流水〔`qtyDone` 服务端按矩阵派生 + `breakdown`〕 + `inbounds` 回货流水〔同上〕 + `purchases` 采购台账 + `purchaseSummary` 物料对账〔`demandMilli` 用量/`purchasedMilli` 已买/`amountCents` 实付合计/`pendingCount` 待到笔数〕）
+- `crab atelier order <orderId> --json` → 制单全量视图（含成本三表〔物料随核算现行〕+ totals + sizes/sizeChart + progress + inboundQty + `logs` 报数流水〔`qtyDone` 服务端按矩阵派生 + `breakdown`〕 + `inbounds` 回货流水〔同上〕 + `purchases` 采购台账〔含 `direction` in\|out〕 + `purchaseSummary` 物料对账〔`demandMilli` 用量/`purchasedMilli` 已买/`outMilli` 已出/`amountCents` 实付合计/`pendingCount` 待到笔数〕）
 - `crab atelier order purchase <orderId> --json` → `{ purchases, summary }`（台账 + 对账一次取）
 - `crab atelier records --json` → `{ records: [...], total, page, totalPages }`（type 含 inbound = 回货入库事件）
 - `crab atelier audits --json` → `{ events: [...], total, page, totalPages }`（事件含 `action`/`actorName`/`actorType`〔agent = 令牌动作〕/`meta`；仅 owner 令牌可查）
