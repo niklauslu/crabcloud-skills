@@ -152,7 +152,7 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 ## 制单与生产（写闸 production）
 
 **制单 = 三态生命周期的投产通知单**（2026-10-09 定稿）：**未确认（草稿，可
-编辑）→ 确认（定稿：可打印工艺单）→ 作废（单向终态：不可打印、
+编辑）→ 确认（定稿：可打印工艺单；数量矩阵仍可补录调整，改数量落时间线）→ 作废（单向终态：不可打印、
 留档）**。只有已确认单据出 A4 工艺单（**不含任何金额**，
 留档 + 给工厂）。标题默认「款式名 + 日期」可改。规格明细 = 「色板 × 尺码」
 矩阵：尺寸必有（款式未录尺码 400，先补商品规格）；色板可有可无（单色款不
@@ -181,7 +181,7 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 | 看一款的制单 | `crab atelier orders <styleId> [--status draft\|confirmed\|voided]`（三态计数随行） |
 | 看一单 | `crab atelier order <orderId>`（标题 + 规格明细 + 工序报数累计 + 入库对账 + **采购对账与流水** + **报数/回货流水〔含色码矩阵〕** + 快照合计；orderId 见 orders） |
 | 建草稿 | `crab atelier order add <styleId> --breakdown "黑色:S=30,M=45\|米白:S=20" [--title 标题 --supplier <id\|前缀\|名称> --delivery 2026-10-20 --notes 备注]`（--breakdown 色码=件数：多色 `\|` 分段、`色:` 前缀；单色款直接 `"S=10,M=20"`） |
-| 改草稿 | `crab atelier order edit <orderId> [--title ... --breakdown "..." --supplier ... --delivery ... --notes ...]`（仅未确认可编辑） |
+| 改制单 | `crab atelier order edit <orderId> [--title ... --breakdown "..." --supplier ... --delivery ... --notes ...]`（草稿全量可改；已确认单仅 --breakdown 数量补录，落时间线） |
 | 确认定稿 | `crab atelier order confirm <orderId>`（可打印；定稿后不可再改） |
 | 作废 | `crab atelier order void <orderId>`（单向终态：不可打印、留档） |
 | 报数 | `crab atelier order log <orderId> --step 裁剪 --breakdown "S=10,M=20" [--defect 2 --note 备注]`（--step 须在单据工序列表内〔order 详情可看〕；--breakdown 按单据规格逐格报、总数服务端按格求和；次品 ≤ 总数） |

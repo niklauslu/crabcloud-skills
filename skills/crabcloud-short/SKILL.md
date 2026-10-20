@@ -58,11 +58,15 @@ short 命令需要 **short scope** 的令牌：`crab login --scopes short`（绑
 | 写剧本 | `crab short episode edit <id> --script "…"`（整体替换；修改是常事，直接覆盖） |
 | 推制作状态 | `--prod-status outline\|scripting\|prep\|shooting\|post\|ready` |
 | 发布 | `--published on`（要求 prod-status 先到 ready，否则 409 not_ready） |
+| 下架 | `--published off`（已发布的集要先下架才能降制作态，否则 409 published_downgrade） |
 | 删集 | `crab short episode rm <id>`（分镜一并删除，不可恢复） |
 
 剧状态：`draft → published → archived`。归档不是删除——archived 剧的内容
-只读（写操作 409 series_archived），唯一出口是 `series edit <id> --status
-draft|published` 改回来。
+只读（内容字段有实际改动即 409 series_archived，原样保存不算改动），唯一
+出口是 `series edit <id> --status draft|published` 改回来。
+
+已发布的集要降制作态，先 `--published off` 下架再改——保持「已发布」的同时
+降级会被拒（409 published_downgrade），避免产出「僵尸已发布」集。
 
 ## 主体库（挂剧，跨集复用）
 
