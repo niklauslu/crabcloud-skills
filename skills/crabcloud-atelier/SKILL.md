@@ -53,9 +53,12 @@ atelier 命令需要 **atelier scope + 工坊绑定**的令牌：`crab login --s
 
 ## 成员、权限与邀请
 
-权限模型：角色 owner（恒全权不可移除）/ member，member 按**权限集**（七个写权限
-flags 的数组）判定：`styles`（款式库）、`records`（记录）、`materials`（面辅料）、
-`costing`（核价）、`production`（生产）、`team`（成员管理）、`settings`（组织设置）。
+权限模型：角色 owner（恒全权不可移除）/ member，member 按**权限集**（flags 的
+数组）判定，共九项：`styles`（款式库）、`records`（记录）、`materials`（面辅料）、
+`costing`（核价）、`production`（生产）、`price`（价格查看——2026-10-23 增：
+无 price 的成员金额读面一律 `—`、写价格 403 `price_required`）、`flow`（阶段流转
+——2026-10-23 增：生产/完结/回流三动作的唯一入口）、`team`（成员管理）、
+`settings`（组织设置）。
 只读不需要 flag——active 成员默认可读全部。岗位是**纯职务标识**（设计师/版师等，
 不影响权限；0124 起与权限解耦），`roles` 查名录、`role add/rename/rm` 管理；
 「管理员 = 全功能、成员 =
@@ -87,9 +90,12 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 带出），记录与引用全部保留、可恢复、无删除。**品类是辅助输入不是关联**（2026-10-14
 拍板）：品类字典只供建档时选词与记录页管理，款式上的品类仍是自由文本、不挂 id——
 `--category` 直接写文本即可，想进字典供团队复选再 `category create`。
-款式阶段是**定位标记不是状态机**（设计 → 核算 → 生产 → 完成；打样与审版收在
-设计段内）——任意阶段可编辑、可补录，阶段变更自动落时间线。金额一律**整数分**
-（`--retail-cents 19900` = ¥199.00）。款号 = 工坊内唯一业务主键（重复建档 409）。
+**阶段模型 v2（2026-10-23，#44）**：三段式 **研发（设计/核算）→ 生产 → 完结**。
+- 流转只能走 **`style flow`** 端点：`to-production`（确认进入生产，**硬卡纸样稿**——没传纸样 409 `pattern_required`）、`back`（退回研发，**必填 `--reason`**，时间线留痕）、`complete`（标记完结，**完结数据闸四项全过**才放行）。
+- `style edit --stage 生产|完成` 会被服务端 409 `stage_transition_via_flow` 拒（研发段内 设计↔核算 仍可直改）。
+- **数据锁定是双向的**：回流研发后制单/采购写面全锁（409 `style_not_in_production`，回流是唯一解锁路径）；生产/完成阶段稿件与审版冻结（409 `style_locked_in_production`）；归档款只读（409 `style_archived`，先 restore）。
+- 核算行是例外（2026-10-19 拍板）：生产阶段单耗/单价仍随核算现行可改。
+金额一律**整数分**（`--retail-cents 19900` = ¥199.00）。款号 = 工坊内唯一业务主键（重复建档 409）。
 
 | 意图 | 命令 |
 |---|---|
@@ -103,9 +109,11 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 归档 / 恢复品类 | `crab atelier category archive <id>` / `crab atelier category restore <id>`（归档后建档选择器不再出，已录款式文本不受影响） |
 | 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--status active\|archived\|all] [--page N]`（默认只看在库；--q 搜款号/品名/品类/色系；带阶段与状态计数） |
 | 看一款 | `crab atelier style <id>`（信息按组展示：01 基础信息 / 02 商品规格 / 03 生产信息 / 04 尺寸表〔部位 × 尺码矩阵 + 档差，尺码列随商品规格联动〕，+ 轮次时间线 + 最近事件，一次取全） |
-| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--designer ... --pattern-maker 纸样师 --sample-maker 车版师] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
+| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
 | 归档款式 | `crab atelier style archive <styleId>` / `crab atelier style restore <styleId>`（幂等无删除；归档款详情仍可看，时间线落归档句） |
-| 编辑款式 | `crab atelier style edit <id> --stage 生产 [--pattern-maker 纸样师 --sample-maker 车版师]`（给的 flag 才改；`--collection clear` 解绑系列；人员字段均选填自由文本） |
+| 编辑款式 | `crab atelier style edit <id> --name ... --colorways ...`（给的 flag 才改；`--collection clear` 解绑系列。**`--stage 生产/完成` 已不可直改**——生产/完结走 `style flow`，见上；**责任到人（2026-10-23）**：设计师/纸样师/车版师手填字段已退役——稿件上传人/制单人/修改人由登录账号自动落名，岗位随工坊岗位带出） |
+| **阶段流转（v0.5）** | `crab atelier style flow <styleId> to-production`（确认进入生产，须已传纸样稿）/ `style flow <styleId> back --reason "原因"`（退回研发）/ `style flow <styleId> complete`（标记完结，完结检查全过） |
+| **完结检查** | `crab atelier style check <styleId>`（四项逐项 ✓/✗：制单已确认 / 采购已齐 / 报数覆盖全部工序 / 回货入库齐——complete 的前置自检） |
 | 关联加工厂 | `crab atelier style create/edit <...> --factory <加工厂id\|名称>`（值引用供应商目录 type='factory'；`--factory clear` 解绑；面辅料型供应商会被拒；详情 03 生产信息与制单建单默认带出） |
 | 设款式封面 | `crab atelier style cover <styleId> <本地图片路径>`（png/jpg/webp/gif ≤20MB；走工坊素材中转上传，素材自动进 owner 云盘「服装研发」分类，Web 产品库/详情画册位即显；`--clear` 移除引用素材不删）。封面引用只认工坊素材——云盘直传的通用文件挂不上 |
 | 登记规格 | `crab atelier style edit <id> --colorways 驼色,黑,雾蓝 --sizes S,M,L --craft-notes "领口包边，成衣水洗"`（各项各自整体替换——空数组/空串 = 清空；色板与尺码是商品需要的规格，特殊工艺是生产需要的，Web 详情页即按此分组） |
@@ -128,8 +136,8 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 ## 打样（设计阶段稿件与审版）
 
 轮模型（2026-10-08 定稿）：**上传即当前稿，未审版都属同一轮**——设计稿 / 纸样稿 /
-样衣稿三类稿件，每款每类至多一个未定版当前稿（再传 = 修改当前稿：素材/备注/
-关联人员整体替换）；**审版是款级动作**（不挂单个稿件）——通过时当前轮全部未定版
+样衣稿三类稿件，每款每类至多一个未定版当前稿（再传 = 修改当前稿：素材/备注
+整体替换，并落最后修改人）；**审版是款级动作**（不挂单个稿件）——通过时当前轮全部未定版
 稿件各自定版（每类 style+kind 内递增 vN，如「设计稿 v1、纸样稿 v1」），不通过留
 当前稿继续改。**审版确定后不能改**——误操作（手滑点了通过/误建记录）走 Web 端
 「撤回」（仅最新一条可撤；通过单稿件回到待审可改后重审，记录保留「已撤回」
@@ -148,7 +156,8 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 | 加其他成本 | `crab atelier extra add <styleId> --name "包装" --price-cents 3000 [--qty 1 --unit ...]`（包装/运费/损耗） |
 | 改/删核算行 | `crab atelier material\|process\|extra edit <rowId> [同 add 的 flag，给的才改]` / `… rm <rowId>`（合计随单自动重算；行编辑与 A4 打印单也可在 Web 核算 tab） |
 | 全量记录流 | `crab atelier records [--type sample\|costing\|production\|inbound\|purchase\|note] [--page N]`（各款时间线汇聚） |
-| **工坊审计（owner 专属）** | `crab atelier audits [--action 前缀] [--page N]`——工坊维度操作留痕（谁做了什么、含 CLI/agent 动作）；非 owner 令牌 403。分类筛选用前缀组：`--action "atelier.member,atelier.role,atelier.invite"` |
+| **工坊审计（owner 专属）** | `crab atelier audits [--action 前缀] [--style <styleId>] [--page N]`——工坊维度操作留痕（谁做了什么、含 CLI/agent 动作）；非 owner 令牌 403。分类筛选用前缀组：`--action "atelier.member,atelier.role,atelier.invite"`；`--style` = 按款式导出操作记录（目标直命中 ∪ meta 引用） |
+| **数据分析（2026-10-23）** | `crab atelier analytics [--range 30d\|90d\|all] [--collection <id>]`——A 效率与瓶颈（周期中位/分段/卡款）+ B 交期与风险（承诺单五态/逾期与预警清单）+ F 产能与积压（在制分布）；选批次带组织基线对比 |
 | **总览（推荐首入口）** | `crab atelier desk`——款式统计带（总数/进行中/打样中/完成）+ 阶段分布 + 资源速览（在册系列/面辅料/加工厂）+ 最近记录，一次取全 |
 
 ## 制单与生产（写闸 production）
@@ -159,9 +168,14 @@ flags 的数组）判定：`styles`（款式库）、`records`（记录）、`ma
 留档 + 给工厂）。标题默认「款式名 + 日期」可改。规格明细 = 「色板 × 尺码」
 矩阵：尺寸必有（款式未录尺码 400，先补商品规格）；色板可有可无（单色款不
 填色）。加工厂只收 factory 类型供应商（留空 = 自加工）；交期 = 预计交期。
+**三必填（2026-10-23，#45）**：**加工厂 / 发单时间（--issue-date）/ 回货交期
+（--delivery）缺一不可确认**——确认时服务端复核，缺项 400 `confirm_missing_fields`
+（Web 建单 UI 已卡；CLI/Agent 直调靠这条闸兜底）。**确认后冻结 = B 案**：加工厂/
+发单时间/交期/标题/备注/工序全部锁死，仅数量矩阵可补录（落时间线）。
 **工序列表 = 单据级、默认四道（裁剪/车缝/后整/质检）**：草稿期可增删改名
 （毛织无裁剪、加「绣花（外发）」等例外），确认后冻结，报数按工序名挂。
-建单不自动推进款式阶段（阶段是定位标记，需手动 `style edit --stage 生产`）。
+建单不自动推进款式阶段——款式进生产走 `crab atelier style flow <styleId>
+to-production`（须已传纸样稿）；研发阶段制单与采购写面全锁。
 **报数与回货（2026-10-09 拍板；2026-10-11 矩阵化）**：仅已确认单据可报数/
 登记回货；两者都按单据规格「色 × 码」逐格报数（`--breakdown` 矩阵语法同制
 单，总数 = 服务端按格求和派生、客户端不传总数；单据没订的色码格不可报）。
@@ -182,9 +196,9 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 |---|---|
 | 看一款的制单 | `crab atelier orders <styleId> [--status draft\|confirmed\|voided]`（三态计数随行） |
 | 看一单 | `crab atelier order <orderId>`（标题 + 规格明细 + 工序报数累计 + 入库对账 + **采购对账与流水** + **报数/回货流水〔含色码矩阵〕** + 快照合计；orderId 见 orders） |
-| 建草稿 | `crab atelier order add <styleId> --breakdown "黑色:S=30,M=45\|米白:S=20" [--title 标题 --supplier <id\|前缀\|名称> --delivery 2026-10-20 --notes 备注]`（--breakdown 色码=件数：多色 `\|` 分段、`色:` 前缀；单色款直接 `"S=10,M=20"`） |
-| 改制单 | `crab atelier order edit <orderId> [--title ... --breakdown "..." --supplier ... --delivery ... --notes ...]`（草稿全量可改；已确认单仅 --breakdown 数量补录，落时间线） |
-| 确认定稿 | `crab atelier order confirm <orderId>`（可打印；定稿后不可再改） |
+| 建草稿 | `crab atelier order add <styleId> --breakdown "黑色:S=30,M=45\|米白:S=20" [--title 标题 --supplier <id\|前缀\|名称> --issue-date 2026-10-20 --delivery 2026-10-20 --notes 备注]`（--breakdown 色码=件数：多色 `\|` 分段、`色:` 前缀；单色款直接 `"S=10,M=20"`；**确认前须补齐加工厂/发单时间/回货交期**） |
+| 改制单 | `crab atelier order edit <orderId> [--title ... --breakdown "..." --supplier ... --issue-date ... --delivery ... --notes ...]`（草稿全量可改；已确认单仅 --breakdown 数量补录，落时间线） |
+| 确认定稿 | `crab atelier order confirm <orderId>`（三必填服务端复核，缺项 400 `confirm_missing_fields`；可打印；确认后仅数量可补录） |
 | 作废 | `crab atelier order void <orderId>`（单向终态：不可打印、留档） |
 | 报数 | `crab atelier order log <orderId> --step 裁剪 --breakdown "S=10,M=20" [--defect 2 --note 备注]`（--step 须在单据工序列表内〔order 详情可看〕；--breakdown 按单据规格逐格报、总数服务端按格求和；次品 ≤ 总数） |
 | 登记回货 | `crab atelier order inbound <orderId> --breakdown "S=10,M=20" [--note 备注]`（本批按单据规格逐格填；分批多次；差数 = 未交尾数） |
@@ -206,10 +220,11 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
 - `crab atelier order <orderId> --json` → 制单全量视图（含成本三表〔物料随核算现行〕+ totals + sizes/sizeChart + progress + inboundQty + `logs` 报数流水〔`qtyDone` 服务端按矩阵派生 + `breakdown`〕 + `inbounds` 回货流水〔同上〕 + `purchases` 采购台账〔含 `direction` in\|out〕 + `purchaseSummary` 物料对账〔`demandMilli` 用量/`purchasedMilli` 已买/`outMilli` 已出/`amountCents` 实付合计/`pendingCount` 待到笔数〕）
 - `crab atelier order purchase <orderId> --json` → `{ purchases, summary }`（台账 + 对账一次取）
 - `crab atelier records --json` → `{ records: [...], total, page, totalPages }`（type 含 inbound = 回货入库事件）
-- `crab atelier audits --json` → `{ events: [...], total, page, totalPages }`（事件含 `action`/`actorName`/`actorType`〔agent = 令牌动作〕/`meta`；仅 owner 令牌可查）
+- `crab atelier audits --json` → `{ events: [...], total, page, totalPages }`（事件含 `action`/`actorName`/`actorType`〔agent = 令牌动作〕/`meta`；仅 owner 令牌可查；`--style` 过滤）
+- `crab atelier analytics --json` → `AtelierAnalyticsView`（asOf / range / collectionId / efficiency + baseline / stalled / delivery / backlog——聚合口径以服务端为准）
 - `crab atelier desk --json` → `{ org, stats: { totalStyles, activeStyles, doneStyles, samplingStyles, reviewPending, stageCounts, activeCollections, suppliersFabric, suppliersFactory }, reviewTodos, recentRecords }`
 - `crab atelier invite --json` → `{ token, createdAt, link }`
-- 时间字段一律纪元毫秒；金额字段 `*Cents` 一律整数分
+- 时间字段一律纪元毫秒；金额字段 `*Cents` 一律整数分；**2026-10-23 price 权限批**：无 price 权限时金额字段（零售价/核算行/采购/快照合计）为 `null`，人读展示 `—`——脚本消费 `--json` 时按可空处理
 
 ## 纪律
 
@@ -219,13 +234,14 @@ tab 一键标记款式完成。**超量不拦（流水账语义）**：累计可
   改一个人的权限先 `members` 看现值再给全集，避免误删既有权限。
 - 审版是款级动作（通过 = 当前轮稿件各自定版），下结论前与用户确认；结论与意见是研发档案证据链，写了就进时间线；写错了走 Web「撤回」当前一条（稿件回待审），不要建议「改数据库」或无视错误记录。
 - 金额一律整数分（`--retail-cents` 等 `*-cents` flag）；禁止元/浮点输入。
-- 阶段是定位标记不是审批流：不要替用户「推进阶段」，除非明确要求。
+- **阶段模型 v2（2026-10-23）**：研发（设计/核算）→ 生产 → 完结；**不要替用户「推进阶段」**，除非明确要求——且生产/完结只能走 `style flow`（to-production 硬卡纸样稿、back 必填原因、complete 卡完结检查四项闸）；回流研发后制单/采购写面全锁（`style_not_in_production`），生产/完成阶段稿件审版冻结（`style_locked_in_production`）——这些 409 是纪律不是故障。
 - 系列**归档不是删除**（可恢复）；归档后新建款式不可再挂，不要建议「删掉重建」。
 - 款号是工坊内唯一业务主键：建档前如不确定是否已有同款号，先 `styles --q <款号>` 查。
 - 供应商**归档不是删除**（可恢复）；归档只影响选择器，存量引用不受影响——不要
   建议「删掉重录」。联系人/联系方式是自由文本，不要拆成结构化字段。
-- 制单生命周期：草稿可编辑 → **确认定稿**（不可再改、可打印）→ 作废终态
-  （不可打印、留档）。确认/作废前与用户复述单据标题与数量矩阵。
+- 制单生命周期：草稿可编辑 → **确认定稿**（加工厂/发单时间/回货交期三必填，
+  确认后仅数量矩阵可补录、可打印）→ 作废终态（不可打印、留档）。确认/作废前与
+  用户复述单据标题与数量矩阵。
 - 报数/回货**只对已确认单据**，且流水只增不改（写错不能撤，报数前与用户
   复述工序与色码数量）；两者都按单据规格「色 × 码」矩阵逐格报（`--breakdown`），
   总数服务端派生——不要凭总数拼矩阵（单据没订的格子会被 400 拒）；报数不影响

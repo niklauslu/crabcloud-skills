@@ -1,6 +1,6 @@
 ---
 name: crabcloud-short
-description: Short-drama studio via the `crab short` CLI — create series, episodes (with editable scripts), a subject library (characters/scenes/props with appearance prompts and generated-image references), and two-level storyboards (scenes → shots with shot size, camera move, dialogue, duration, image/video prompts, subject links). Built as an AI production workbench: agents read the series bible and write scripts/storyboards back. Use when the user asks anything about their short-drama studio: 短剧、剧目、剧集、分集、剧本、分镜、场、镜头、景别、运镜、主体库、角色、场景、道具、生图、prompt、美术风格、发布、制作状态、工作台 — even if they never say "crab".
+description: Short-drama studio via the `crab short` CLI — create series, episodes (with editable scripts), a subject library (characters/scenes/props with appearance prompts and generated-image references), and two-level storyboards (scenes → shots with shot size, camera move, dialogue, duration, image/video prompts, subject links). Also sells episodes as products: list targets, create products with spec variants and quantity limits, place and pay orders, issue license codes. Built as an AI production workbench: agents read the series bible and write scripts/storyboards back. Use when the user asks anything about their short-drama studio: 短剧、剧目、剧集、分集、剧本、分镜、场、镜头、景别、运镜、主体库、角色、场景、道具、生图、prompt、美术风格、发布、制作状态、工作台、售卖、商品、规格、订单、兑换码 — even if they never say "crab".
 ---
 
 # Short 短剧工作室（crab short）
@@ -98,6 +98,58 @@ short 命令需要 **short scope** 的令牌：`crab login --scopes short`（绑
 `--size` 景别（远景/全景/中景/近景/特写…自由文本）、`--move` 运镜（固定/推/
 拉/摇/移/跟…）、`--duration` 预估秒数、`--subjects` 关联主体 id（服务端校验
 同剧归属，非本剧主体 400 invalid_subject）。
+
+## 售卖（商品 / 规格 / 订单 / 兑换码）
+
+短剧站是 commerce-kit 的第一个真实消费者：**集是唯一可售目标**（可售口径 =
+已发布 + 非免费 + 剧在架）。**价格与售卖状态的事实源在 commerce**，short 不存
+第二份价；**权益永远在 short 自己的表**，commerce 只发**兑换码**（买 N 件 =
+发 N 个码）。
+
+### 卖家侧
+
+| 意图 | 命令 |
+|---|---|
+| 看可售目标（哪些集能上架） | `crab short targets`（已发布 + 非免费 + 剧在架的集） |
+| 上架商品 | `crab short product create --target <集id> --offer-key <键> --title "标题" --price 1990` |
+| 商品列表 | `crab short products`（含规格分组与变体） |
+| 改商品 | `crab short product edit <id> [--title … --price <分> --status … --max-per-order N --max-per-buyer N --shipping <分>]` |
+| 下架商品 | `crab short product rm <id>`（历史订单不受影响） |
+| 规格变体 | `crab short variants <productId>` / `crab short variant upsert <productId> --variant "title=高清;price=1990;画质=高清"` |
+| 下架变体 | `crab short variant rm <productId> <variantId>`（软删，历史订单仍回指它） |
+| 卖家订单 | `crab short orders`（本工作室的订单） |
+| 订单详情 | `crab short order <id>`（金额三段式 + N 个兑换码） |
+| 退款 | `crab short order refund <id> --reason "原因"`（全额；同键重复提交 = 同一笔退款） |
+| 发出的兑换码 | `crab short licenses --org <arg>`（不带 `--org` = 我买到的） |
+
+**金额一律整数分**（`--price 1990` = 19.90 元），禁元/浮点。
+
+### 规格（多规格商品）
+
+**规格 = 一个商品 + 规格配置**（不是多个商品）：
+
+- `--spec "画质=高清,超清;套餐=单集"` 声明**分组与可选取值**（组间 `;`，组内
+  取值 `,`）；
+- `--variant "sku=EP1-HD;title=高清单集;price=1990;画质=高清;套餐=单集"` 建
+  **一条可售配置**（保留键 `sku/title/price/status/maxPerOrder/maxPerBuyer/
+  stock/sort`，**其余键 = 规格取值**）；
+- 一个取值能不能选 = **宿主有没有建出这个组合的变体**（服务端集合包含校验，
+  没建的组合在前台直接置灰）；
+- 变体可各自定价 / 各自下架 / 各自限购。
+
+### 买家侧
+
+| 意图 | 命令 |
+|---|---|
+| 某目标在售商品 | `crab short catalog <集id>`（买家视角） |
+| 下单 | `crab short buy --product <productId> [--variant-id <变体id> --spec-values "画质=高清"] [--qty N] [--address "<json>"]` |
+| 我买过的单 | `crab short my-orders` |
+| 可用支付方式 | `crab short payment-methods <orderId>`（只列同计价单位的） |
+| 去支付 | `crab short pay <orderId>`（法币返回收银台地址，实付由网关回调驱动） |
+| 取消订单 | `crab short order close <id>`（只关未付的单；关单释放优惠占用） |
+
+**买家身份取会话**（不传 `buyerAccountId`——前端传 = 可冒名）。`--qty` 买 N 件
+= 发 N 个码；实物商品必须带 `--address "<json>"`（不透明地址快照）。
 
 ## 典型工作流（从零到一部剧）
 
