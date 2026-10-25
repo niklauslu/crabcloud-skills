@@ -5,7 +5,7 @@ description: Read, search and send the user's Crab Cloud platform email (usernam
 
 # Crab Cloud 邮箱（crab mail）
 
-用户的 Crab Cloud 账号自带平台邮箱 `username@crabcloud.cc`（用户名即地址本地部分）。
+用户的 Crab Cloud 平台邮箱地址为 `username@crabcloud.cc`（用户名即地址本地部分）。2026-10-25 起新账号不再注册即送邮箱——**首次使用 `crab mail` 时服务端自动开通**，无需任何手动步骤；存量账号不受影响。
 本 skill 覆盖邮箱域的 agent 通道；账号/令牌管理见 `crabcloud` skill。云盘见
 `crabcloud-storage` skill（`crab storage …`），协作见 `crabcloud-collab` skill
 （`crab collab …`）。

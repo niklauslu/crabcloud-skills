@@ -23,9 +23,33 @@ API 服务 Web 与 CLI。
 2. **主体外观提示词**（`short subjects <seriesId>` 里关联主体的 `appearancePrompt`）；
 3. **镜头生图 prompt**（shot 的 `imagePrompt`）。
 
-生成结果用 `--image <素材对象id>` 挂回主体或镜头留痕（素材在云盘「短剧制作」
-分类一本账；上传走 crab storage upload 拿对象 id）。生视频同理
-（`videoPrompt` / 镜头结果）。
+生成结果用 `--image <素材对象id>` 挂回主体或镜头留痕，生视频同理
+（`videoPrompt` / 镜头 `--video`）。**素材必须用 `crab short upload <文件>` 上传**
+（见下节「素材」）——云盘 `crab storage upload` 的产物是 files 域，挂到 short
+会被 400 `invalid_object` 拒绝（即便挂上，页面也读不到）。
+
+## 素材（成片 / 封面 / 生成图：云盘一本账）
+
+| 意图 | 命令 |
+|---|---|
+| 上传素材 | `crab short upload <文件> [--org …]` → 输出**对象 id**（`--json` 取 `fileId`） |
+| 挂成片 | `crab short episode edit <epId> --video <对象id>`（`clear` 解除） |
+| 挂剧封面 | `crab short series edit <seriesId> --cover <对象id>` |
+| 挂主体生成图 | `crab short subject edit <id> --image <对象id>` |
+| 挂镜头生成结果 | `crab short shot edit <id> --image <对象id>` / `--video <对象id>`（create 也能带） |
+| 看占用 | `crab short stats`（本工作室占用 + 所有者云盘池用量） |
+
+口径（勿绕）：
+- **存储落云盘、计量走云盘**——素材归档在工作室**所有者**的云盘「短剧制作」
+  分类，配额是所有者的云盘总池，**同一所有者的多个工作室共享一池**；池满上传
+  403 `storage quota exceeded`（清云盘或升档位，不是 short 的额度）。
+- **上限**：图片 10MB / 视频 200MB（服务端无直传凭据时回退中转，统一 20MB——
+  本地 dev 常态）。CLI **不压缩**；web 上传弹窗会自动压（视频 720p / 图片 1080p），
+  大视频优先走 web 传，CLI 适合 agent 生成图、小样。
+- **只认本工作室的 short 域对象**：挂别的工作室 / 云盘 files 域 / 已删对象
+  一律 400 `invalid_object`；解除挂接传 `clear`。
+- 替换素材 = 挂新 id；旧对象留在所有者云盘（不自动删，所有者在云盘回收站清；
+  还被引用的对象云盘侧删不掉）。
 
 ## 第一步：确认可用
 
@@ -47,7 +71,7 @@ short 命令需要 **short scope** 的令牌：`crab login --scopes short`（绑
 
 | 意图 | 命令 |
 |---|---|
-| 看工作室概览 | `crab short stats`（剧目/分集计数） |
+| 看工作室概览 | `crab short stats`（剧目/分集计数 + 存储占用） |
 | 建剧 | `crab short series create "剧名" --genre 都市 --logline "一句话" --audience 女频 --episodes 60` |
 | 剧目列表 | `crab short series [--status draft\|published\|archived\|all]` |
 | 剧详情 | `crab short series show <id>`（基础档案 + 制作信息 + 集数进度） |
@@ -58,6 +82,7 @@ short 命令需要 **short scope** 的令牌：`crab login --scopes short`（绑
 | 写剧本 | `crab short episode edit <id> --script "…"`（整体替换；修改是常事，直接覆盖） |
 | 推制作状态 | `--prod-status outline\|scripting\|prep\|shooting\|post\|ready` |
 | 发布 | `--published on`（要求 prod-status 先到 ready，否则 409 not_ready） |
+| 挂成片 | `--video <对象id>`（对象 id 来自 `crab short upload`；`clear` 解除） |
 | 下架 | `--published off`（已发布的集要先下架才能降制作态，否则 409 published_downgrade） |
 | 删集 | `crab short episode rm <id>`（分镜一并删除，不可恢复） |
 
@@ -76,7 +101,7 @@ short 命令需要 **short scope** 的令牌：`crab login --scopes short`（绑
 | 建角色/场景/道具 | `crab short subject create <seriesId> "名字" --kind character --prompt "外貌/服装/气质"` |
 | 补声音设定 | `--voice "低沉沙哑"`（角色用） |
 | 编辑 | `crab short subject edit <id> [--prompt … --voice …\|clear --image <素材id>\|clear]` |
-| 挂生成图 | 先 `crab storage upload 图片` 拿对象 id → `subject edit <id> --image <对象id>` |
+| 挂生成图 | 先 `crab short upload 图片` 拿对象 id → `subject edit <id> --image <对象id>`（**不是** storage upload） |
 | 删主体 | `crab short subject rm <id>` |
 
 同剧同类型重名 409 name_taken。`--prompt` 是生图输入的核心——写具体
@@ -91,6 +116,7 @@ short 命令需要 **short scope** 的令牌：`crab login --scopes short`（绑
 | 改场 | `crab short sequence edit <id> --title "…"` |
 | 添加镜头 | `crab short shot create <sequenceId> --desc "画面" --size 特写 --move 固定 --duration 8 --dialogue "…" --subjects su_x,su_y` |
 | 镜头 prompt | `--image-prompt`（生图）/ `--video-prompt`（生视频）；镜号自动顺延 |
+| 挂生成结果 | `--image <对象id>` / `--video <对象id>`（`crab short upload` 产物；`clear` 解除） |
 | 编辑镜头 | `crab short shot edit <id> [同 create 的 flags]`（给的 flag 才改；--subjects 整组替换，clear 全摘） |
 | 删场/删镜 | `crab short sequence rm <id>`（含场内镜头）/ `crab short shot rm <id>` |
 
@@ -161,5 +187,6 @@ crab short episode edit <epId> --script "第一场…" --prod-status scripting
 crab short sequence create <epId> --title "天台·夜"
 crab short shot create <seqId> --desc "林晚回望城市" --size 中景 --move 推 --duration 6 \
   --subjects su_x --image-prompt "林晚立于天台边缘回望，霓虹倒影"
-# 生成图后：crab storage upload 生成图 → crab short shot edit <shotId>（web 挂接亦可）
+# 生成图后：crab short upload 生成图.png → 拿对象 id → crab short shot edit <shotId> --image <对象id>
+# 成片：crab short upload 成片.mp4 → crab short episode edit <epId> --video <对象id> --prod-status ready
 ```

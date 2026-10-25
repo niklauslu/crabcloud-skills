@@ -91,9 +91,10 @@ atelier 命令需要 **atelier scope + 工坊绑定**的令牌：`crab login --s
 拍板）：品类字典只供建档时选词与记录页管理，款式上的品类仍是自由文本、不挂 id——
 `--category` 直接写文本即可，想进字典供团队复选再 `category create`。
 **阶段模型 v2（2026-10-23，#44）**：三段式 **研发（设计/核算）→ 生产 → 完结**。
-- 流转只能走 **`style flow`** 端点：`to-production`（确认进入生产，**硬卡纸样稿**——没传纸样 409 `pattern_required`）、`back`（退回研发，**必填 `--reason`**，时间线留痕）、`complete`（标记完结，**完结数据闸四项全过**才放行）。
+- 流转只能走 **`style flow`** 端点：`to-production`（确认进入生产，**自主款（internal）硬卡纸样稿**——没传纸样 409 `pattern_required`；**外发款（outsourced）免纸样**）、`back`（退回研发，**必填 `--reason`**，时间线留痕）、`complete`（标记完结，**完结数据闸四项全过**才放行）。
+- **生产方式（2026-10-24 外发批）**：款式建 `--production-mode internal|outsourced`（缺省 internal；研发阶段可 `style edit --production-mode` 改，进生产锁定）——**外发款**（界面选项「自主 / 外发」）直接下单外部工厂：进生产**免纸样**、生产/完成阶段**研发资料仍可补充编辑**（稿件/审版/规格/核算不锁；stage 与生产方式本身除外）。
 - `style edit --stage 生产|完成` 会被服务端 409 `stage_transition_via_flow` 拒（研发段内 设计↔核算 仍可直改）。
-- **数据锁定是双向的**：回流研发后制单/采购写面全锁（409 `style_not_in_production`，回流是唯一解锁路径）；生产/完成阶段稿件与审版冻结（409 `style_locked_in_production`）；归档款只读（409 `style_archived`，先 restore）。
+- **数据锁定是双向的（仅自主款）**：回流研发后制单/采购写面全锁（409 `style_not_in_production`，回流是唯一解锁路径）；生产/完成阶段稿件与审版冻结（409 `style_locked_in_production`）；归档款只读（409 `style_archived`，先 restore）。**例外（2026-10-24 二修）**：基础信息（款号/名称/品类/系列/加工厂/注意事项/备注）生产/完成阶段照常可 `style edit`——色板/尺码/尺寸表/零售价才锁。
 - 核算行是例外（2026-10-19 拍板）：生产阶段单耗/单价仍随核算现行可改。
 金额一律**整数分**（`--retail-cents 19900` = ¥199.00）。款号 = 工坊内唯一业务主键（重复建档 409）。
 
@@ -107,12 +108,12 @@ atelier 命令需要 **atelier scope + 工坊绑定**的令牌：`crab login --s
 | 建品类 | `crab atelier category create "连衣裙"`（同 org 重名 409；归档同名同样占用，恢复即可） |
 | 改品类 | `crab atelier category edit <id> --name 新名称`（撞名 409） |
 | 归档 / 恢复品类 | `crab atelier category archive <id>` / `crab atelier category restore <id>`（归档后建档选择器不再出，已录款式文本不受影响） |
-| 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--status active\|archived\|all] [--page N]`（默认只看在库；--q 搜款号/品名/品类/色系；带阶段与状态计数） |
+| 看款式库 | `crab atelier styles [--q 关键字] [--stage 核算] [--collection <id>] [--mode internal\|outsourced] [--status active\|archived\|all] [--page N]`（默认只看在库；--q 搜款号/品名/品类/色系；--mode 按生产方式筛（internal 自主 / outsourced 外发）；外发款行内带 `[外发]` 标；带阶段与状态计数） |
 | 看一款 | `crab atelier style <id>`（信息按组展示：01 基础信息 / 02 商品规格 / 03 生产信息 / 04 尺寸表〔部位 × 尺码矩阵 + 档差，尺码列随商品规格联动〕，+ 轮次时间线 + 最近事件，一次取全） |
-| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
+| 款式建档 | `crab atelier style create --code KH001 --name "羊毛大衣" [--category 大衣] [--collection <id>] [--production-mode internal\|outsourced] [--retail-cents 199000] [--notes ...]`（款号唯一；归档系列不可挂；`--production-mode outsourced` = 外发款，进生产免纸样、生产中研发资料可补录）。**开款 ≠ 补录**：建档只收基本字段，色板/尺码/工艺开款后补录（Web 详情页分组编辑或下方 CLI flag 均可；建档时也可一并带上，见 `--colorways/--sizes/--craft-notes`） |
 | 归档款式 | `crab atelier style archive <styleId>` / `crab atelier style restore <styleId>`（幂等无删除；归档款详情仍可看，时间线落归档句） |
-| 编辑款式 | `crab atelier style edit <id> --name ... --colorways ...`（给的 flag 才改；`--collection clear` 解绑系列。**`--stage 生产/完成` 已不可直改**——生产/完结走 `style flow`，见上；**责任到人（2026-10-23）**：设计师/纸样师/车版师手填字段已退役——稿件上传人/制单人/修改人由登录账号自动落名，岗位随工坊岗位带出） |
-| **阶段流转（v0.5）** | `crab atelier style flow <styleId> to-production`（确认进入生产，须已传纸样稿）/ `style flow <styleId> back --reason "原因"`（退回研发）/ `style flow <styleId> complete`（标记完结，完结检查全过） |
+| 编辑款式 | `crab atelier style edit <id> --name ... --colorways ...`（给的 flag 才改；`--collection clear` 解绑系列；`--production-mode internal\|outsourced` 仅研发阶段可改。**`--stage 生产/完成` 已不可直改**——生产/完结走 `style flow`，见上；**生产/完成阶段基础信息照常可改**（款号/名称/品类/系列/加工厂/注意事项/备注），色板/尺码/尺寸表/零售价锁定。**责任到人（2026-10-23）**：设计师/纸样师/车版师手填字段已退役——稿件上传人/制单人/修改人由登录账号自动落名，岗位随工坊岗位带出） |
+| **阶段流转（v0.5）** | `crab atelier style flow <styleId> to-production`（确认进入生产——**自主款须已传纸样稿，外发款免纸样**）/ `style flow <styleId> back --reason "原因"`（退回研发）/ `style flow <styleId> complete`（标记完结，完结检查全过） |
 | **完结检查** | `crab atelier style check <styleId>`（四项逐项 ✓/✗：制单已确认 / 采购已齐 / 报数覆盖全部工序 / 回货入库齐——complete 的前置自检） |
 | 关联加工厂 | `crab atelier style create/edit <...> --factory <加工厂id\|名称>`（值引用供应商目录 type='factory'；`--factory clear` 解绑；面辅料型供应商会被拒；详情 03 生产信息与制单建单默认带出） |
 | 设款式封面 | `crab atelier style cover <styleId> <本地图片路径>`（png/jpg/webp/gif ≤20MB；走工坊素材中转上传，素材自动进 owner 云盘「服装研发」分类，Web 产品库/详情画册位即显；`--clear` 移除引用素材不删）。封面引用只认工坊素材——云盘直传的通用文件挂不上 |
@@ -135,11 +136,13 @@ atelier 命令需要 **atelier scope + 工坊绑定**的令牌：`crab login --s
 
 ## 打样（设计阶段稿件与审版）
 
-轮模型（2026-10-08 定稿）：**上传即当前稿，未审版都属同一轮**——设计稿 / 纸样稿 /
-样衣稿三类稿件，每款每类至多一个未定版当前稿（再传 = 修改当前稿：素材/备注
+轮模型（2026-10-08 定稿；纸样口径 2026-10-24 修订）：**上传即当前稿，未审版都属同一轮**——设计稿 / 样衣稿两类稿件，每款每类至多一个未定版当前稿（再传 = 修改当前稿：素材/备注
 整体替换，并落最后修改人）；**审版是款级动作**（不挂单个稿件）——通过时当前轮全部未定版
-稿件各自定版（每类 style+kind 内递增 vN，如「设计稿 v1、纸样稿 v1」），不通过留
-当前稿继续改。**审版确定后不能改**——误操作（手滑点了通过/误建记录）走 Web 端
+稿件各自定版（style+kind 内递增 vN，如「设计稿 v1」），不通过留
+当前稿继续改。**纸样是独立文件、不参与审版定版**（纸样稿恒无版本）：可传多文件
+（≤20，2026-10-25 拍板）、可逐个移除（移除最后一个 = 删整份纸样），每次增删落
+款式时间线「上传纸样稿 / 调整纸样 / 移除纸样」+ 专属审计；操作在 Web 款式详情
+「纸样」卡。**审版确定后不能改**——误操作（手滑点了通过/误建记录）走 Web 端
 「撤回」（仅最新一条可撤；通过单稿件回到待审可改后重审，记录保留「已撤回」
 标记，撤回本身落时间线留痕）。素材与审版图走 Web 端上传（atelier 存储域，owner 云盘「服装研发」
 分类）。**打样不进 CLI**——旧 `crab atelier samples/sample ...` 命令面已随轮模型
@@ -175,7 +178,7 @@ atelier 命令需要 **atelier scope + 工坊绑定**的令牌：`crab login --s
 **工序列表 = 单据级、默认四道（裁剪/车缝/后整/质检）**：草稿期可增删改名
 （毛织无裁剪、加「绣花（外发）」等例外），确认后冻结，报数按工序名挂。
 建单不自动推进款式阶段——款式进生产走 `crab atelier style flow <styleId>
-to-production`（须已传纸样稿）；研发阶段制单与采购写面全锁。
+to-production`（自主款须已传纸样稿，外发款免纸样）；研发阶段制单与采购写面全锁。
 **报数与回货（2026-10-09 拍板；2026-10-11 矩阵化）**：仅已确认单据可报数/
 登记回货；两者都按单据规格「色 × 码」逐格报数（`--breakdown` 矩阵语法同制
 单，总数 = 服务端按格求和派生、客户端不传总数；单据没订的色码格不可报）。
